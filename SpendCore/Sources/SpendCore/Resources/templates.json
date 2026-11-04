@@ -1,0 +1,29 @@
+[
+  {
+    "id": "generic_card_purchase",
+    "bankName": "Bank A",
+    "senderHints": ["BANKA"],
+    "pattern": "(?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) (?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) debited from (?:your )?card ending (?:in )?(?<last4>\\d{4}) at (?<merchant>.+?) on (?<date>\\d{2}/\\d{2}/\\d{2})(?:\\.? ?Avl\\.? Bal:? (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": ["debited"],
+    "creditKeywords": [],
+    "dateFormat": "dd/MM/yy"
+  },
+  {
+    "id": "generic_account_credit",
+    "bankName": "Bank B",
+    "senderHints": ["BANKB"],
+    "pattern": "A/C (?:No\\.? )?[x*]*(?<last4>\\d{4}) has been (?:credited|debited) with (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) (?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?)(?: on (?<date>\\d{2}-\\d{2}-\\d{4}))?(?:\\.? ?Bal:? (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": ["debited"],
+    "creditKeywords": ["credited"],
+    "dateFormat": "dd-MM-yyyy"
+  },
+  {
+    "id": "generic_pos_txn",
+    "bankName": "Bank C",
+    "senderHints": ["BANKC"],
+    "pattern": "Txn of (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) (?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) at (?<merchant>.+?) using card [x*]*(?<last4>\\d{4})",
+    "debitKeywords": ["approved", "txn"],
+    "creditKeywords": ["reversed"],
+    "dateFormat": null
+  }
+]
