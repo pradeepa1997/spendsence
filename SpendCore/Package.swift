@@ -15,6 +15,10 @@ let package = Package(
             name: "SpendCore",
             resources: [.process("Resources")]
         ),
-        .testTarget(name: "SpendCoreTests", dependencies: ["SpendCore"]),
+        .testTarget(
+            name: "SpendCoreTests",
+            dependencies: ["SpendCore"],
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )
