@@ -385,7 +385,7 @@ The initial corpus needs at least **20 synthetic samples**, including:
 brew install xcodegen          # once
 xcodegen generate              # after any project.yml change
 cd SpendCore && swift test     # parser + store tests on macOS
-xcodebuild -scheme SpendSense -destination 'platform=iOS Simulator,name=iPhone 16' build
+xcodebuild -scheme SpendSense -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
 Claude Code must keep `swift test` green and the app building for the simulator after every task.
