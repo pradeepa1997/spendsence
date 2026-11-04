@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 import SpendCore
 
@@ -5,7 +6,18 @@ import SpendCore
 struct SpendSenseApp: App {
     var body: some Scene {
         WindowGroup {
-            RootTabView()
+            // One container per process: the same one IngestionService.shared (App Intent, Simulate tab) uses.
+            switch SharedStore.containerResult {
+            case .success(let container):
+                RootTabView()
+                    .modelContainer(container)
+            case .failure(let error):
+                ContentUnavailableView(
+                    "Storage unavailable",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(error.localizedDescription)
+                )
+            }
         }
     }
 }
