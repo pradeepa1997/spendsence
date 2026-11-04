@@ -56,7 +56,7 @@ struct ClassifierTests {
     @Test(arguments: [
         "Your A/C xxxx5678 has been credited with LKR 150,000.00",
         "Salary of LKR 185,000.00 received to your A/C ending 5678",
-        "Payment of LKR 5,000 received. Total due LKR 40,000.",
+        "LKR 5,000 has been deposited to your A/C ending 1234.",
     ])
     func creditsAreTransactions(body: String) {
         #expect(classify(body) == .transaction)
