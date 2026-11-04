@@ -12,5 +12,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "SpendCore"),
+        .testTarget(name: "SpendCoreTests", dependencies: ["SpendCore"]),
     ]
 )
