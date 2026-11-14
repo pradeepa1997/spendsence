@@ -3,48 +3,50 @@ import SwiftUI
 import SpendCore
 
 struct TransactionListView: View {
+    @Environment(\.modelContext) private var context
+
     @Query(sort: \SpendCore.Transaction.occurredAt, order: .reverse)
     private var transactions: [SpendCore.Transaction]
 
-    /// The latest message delivered by the Shortcuts automation (Simulate-tab messages don't count).
-    @Query(TransactionListView.latestAutomationMessage)
-    private var latestAutomationMessages: [RawMessage]
-
-    nonisolated private static var latestAutomationMessage: FetchDescriptor<RawMessage> {
-        let sms = TransactionSource.sms.rawValue
-        var descriptor = FetchDescriptor<RawMessage>(
-            predicate: #Predicate { $0.sourceRaw == sms },
-            sortBy: [SortDescriptor(\.receivedAt, order: .reverse)]
-        )
-        descriptor.fetchLimit = 1
-        return descriptor
-    }
-
-    private var health: AutomationHealth {
-        let health = AutomationHealth.evaluate(lastSMSAt: latestAutomationMessages.first?.receivedAt)
-        // With an empty list, the empty state already explains the setup; don't stack a banner on top.
-        if health == .neverReceived && transactions.isEmpty { return .healthy }
-        return health
-    }
+    @State private var searchText = ""
+    @State private var showAdd = false
+    @State private var errorText: String?
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if transactions.isEmpty {
-                    ContentUnavailableView(
-                        "No transactions yet",
-                        systemImage: "tray",
-                        description: Text("Use the Simulate tab or set up the Shortcuts automation.")
-                    )
-                } else {
-                    List {
-                        ForEach(daySections) { section in
-                            Section(section.title) {
-                                ForEach(section.transactions) { transaction in
-                                    NavigationLink {
-                                        TransactionDetailView(transaction: transaction)
+        Group {
+            if transactions.isEmpty {
+                ContentUnavailableView(
+                    "No transactions yet",
+                    systemImage: "tray",
+                    description: Text("Set up the Shortcuts automation, use Simulate in the More tab, or tap + to add one.")
+                )
+            } else if filtered.isEmpty {
+                ContentUnavailableView.search(text: searchText)
+            } else {
+                List {
+                    ForEach(daySections) { section in
+                        Section(section.title) {
+                            ForEach(section.transactions) { transaction in
+                                NavigationLink {
+                                    TransactionDetailView(transaction: transaction)
+                                } label: {
+                                    TransactionRow(transaction: transaction)
+                                }
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        run { try editor.delete(transaction) }
                                     } label: {
-                                        TransactionRow(transaction: transaction)
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                                .swipeActions(edge: .leading) {
+                                    if transaction.isAwaitingReview {
+                                        Button {
+                                            run { try editor.approve(transaction) }
+                                        } label: {
+                                            Label("Approve", systemImage: "checkmark")
+                                        }
+                                        .tint(.green)
                                     }
                                 }
                             }
@@ -52,19 +54,54 @@ struct TransactionListView: View {
                     }
                 }
             }
-            .safeAreaInset(edge: .top) {
-                AutomationHealthBanner(health: health)
+        }
+        .searchable(text: $searchText, prompt: "Merchant, category, note or amount")
+        .safeAreaInset(edge: .top) {
+            LiveAutomationHealthBanner(suppressNeverReceived: transactions.isEmpty)
+                .padding(.horizontal)
+        }
+        .navigationTitle("Transactions")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showAdd = true
+                } label: {
+                    Label("Add transaction", systemImage: "plus")
+                }
             }
-            .navigationTitle("Transactions")
+        }
+        .sheet(isPresented: $showAdd) {
+            NavigationStack {
+                TransactionFormView(mode: .add(linking: nil))
+            }
+        }
+        .errorAlert($errorText)
+    }
+
+    private var editor: TransactionEditor { TransactionEditor(context: context) }
+
+    private var filtered: [SpendCore.Transaction] {
+        let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !query.isEmpty else { return transactions }
+        return transactions.filter { transaction in
+            let fields: [String?] = [
+                transaction.merchant, transaction.originalMerchant, transaction.category?.name, transaction.note,
+                transaction.account?.displayName, transaction.amountText,
+            ]
+            return fields.compactMap { $0?.lowercased() }.contains { $0.contains(query) }
         }
     }
 
     private var daySections: [DaySection] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: transactions) { calendar.startOfDay(for: $0.occurredAt) }
+        let grouped = Dictionary(grouping: filtered) { calendar.startOfDay(for: $0.occurredAt) }
         return grouped.keys.sorted(by: >).map { day in
             DaySection(day: day, transactions: grouped[day] ?? [])
         }
+    }
+
+    private func run(_ action: () throws -> Void) {
+        do { try action() } catch { errorText = error.localizedDescription }
     }
 }
 
@@ -74,34 +111,4 @@ private struct DaySection: Identifiable {
 
     var id: Date { day }
     var title: String { day.formatted(date: .complete, time: .omitted) }
-}
-
-private struct TransactionRow: View {
-    let transaction: SpendCore.Transaction
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(transaction.merchant ?? "Unknown")
-                        .font(.headline)
-                    if transaction.needsReview {
-                        ReviewBadge()
-                    }
-                }
-                Text(transaction.account?.displayName ?? "No account")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(transaction.signedAmountText)
-                    .font(.body.monospacedDigit())
-                    .foregroundStyle(transaction.amountColor)
-                Text(transaction.occurredAt, style: .time)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
 }

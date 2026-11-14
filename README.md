@@ -4,7 +4,21 @@ An iOS expense tracker that logs bank SMS automatically. iOS doesn't let apps re
 **Shortcuts personal automation** ("Message contains `LKR`") passes each bank SMS to the app's
 **App Intent**. The intent parses the message and saves it on-device without opening the app.
 
-Phase 1 covers the ingestion pipeline and three debug tabs. See `PHASE1_SPEC.md` for the full spec.
+Specs: `PHASE1_SPEC.md` (SMS ingestion) and `PHASE2_SPEC.md` (categories, editing, review queue, dashboard).
+
+## Features
+- **Dashboard:** spent / income / net for any month, a spending-by-category donut, daily bars, top merchants,
+  a review chip and an automation health warning.
+- **Transactions:** search, category icons, swipe to approve or delete, **+** for cash or manual entries.
+- **Edit and teach:** fix any field. After renaming a merchant or changing a category, choose *Remember for future
+  messages* or *Remember and update past transactions*. That becomes a merchant rule (More → Merchant rules).
+- **Review:** low-confidence transactions and SMS the app couldn't read. Approve, edit, mark as not a transaction,
+  add manually or dismiss.
+- **Categories:** 13 defaults, auto-assigned (your rules → built-in keywords such as KEELLS → Groceries, UBER EATS →
+  Dining, DIALOG → Bills → Other; credits → Income). Rename, restyle or add your own under More → Categories.
+  Transfers (ATM withdrawals, own-account transfers) aren't counted as spending.
+- **Siri / Shortcuts:** "Log SMS in SpendSense" (the automation action), "Add expense in SpendSense",
+  "How much did I spend in SpendSense".
 
 ## Requirements
 - Xcode 26, Swift 6 (strict concurrency)
@@ -34,7 +48,7 @@ CI (`.github/workflows/ci.yml`) runs both on a macOS runner.
 ## Architecture
 ```
 Shortcuts automation ──► LogTransactionFromSMSIntent ─┐
-Simulate tab ─────────────────────────────────────────┴─► IngestionService.ingest   (the only write path)
+Simulate tab ─────────────────────────────────────────┴─► IngestionService.ingest   (the only SMS write path)
                                                              1. persist RawMessage (pending)
                                                              2. ParsingPipeline: normalize → classify →
                                                                 template → generic → confidence
@@ -43,6 +57,9 @@ Simulate tab ──────────────────────�
                                                                 Account + save Transaction (atomic)
                                                              6. any error → status failed, never throws
 ```
+- At step 5 the transaction is categorised (`CategoryService` → `Categorizer`) and renamed by any merchant rule.
+- User edits, manual entries, categories and rules go through `TransactionEditor` on the view's main context;
+  Siri's Add Expense reaches the same editor via `IngestionService.addExpense`.
 - `SpendCore/Sources/SpendCore/Parsing`: pure, `Sendable`, no SwiftData.
 - `SpendCore/Sources/SpendCore/Resources/templates.json`: bank templates as data.
 - `SpendCore/Tests/SpendCoreTests/Fixtures/sms_samples.json`: the test corpus (38 samples: 27 synthetic, 11 anonymized real bank formats).
@@ -79,8 +96,8 @@ digits (HNB, People's Bank) are matched to the same account as a longer ending, 
 
 ## Manual acceptance test (real iPhone)
 1. Install on the device. Enable the App Group in the developer portal if Xcode asks.
-2. **Simulate tab:** use *Load sample* (or paste an SMS) and tap *Ingest*. Confirm the transaction
-   appears in Transactions.
+2. **More → Simulate SMS:** use *Load sample* (or paste an SMS) and tap *Ingest*. Confirm the transaction
+   appears in Transactions, with a category.
 3. **Shortcuts:**
    - Automation → **+** → **Message** → *Message Contains* `LKR`.
    - Turn on **Run Immediately** and turn off *Notify When Run*.
@@ -92,8 +109,11 @@ digits (HNB, People's Bank) are matched to the same account as a longer ending, 
 5. **Lock the phone**, send another test SMS, then unlock. The transaction must be there. This
    verifies the file protection setting.
 6. Send an OTP-style message (`Your OTP is 123456. Do not share it.`). It should appear in Messages
-   as *Ignored* and not in Transactions.
+   as *Ignored* (More → Messages) and not in Transactions.
 7. Send the same message twice. The second should be marked *Duplicate*.
+8. **Phase 2:** edit a transaction's merchant or category and choose *Remember…*; send a similar SMS and check the
+   rule is applied. Add a cash expense with **+** and with Siri ("Add expense in SpendSense"). Check the Dashboard
+   totals and the Review tab badge.
 
 You can also run the intent by hand: Shortcuts → new shortcut → *Log Transaction from SMS* → type a
 message → ▶︎.
@@ -120,6 +140,10 @@ message → ▶︎.
 | Account endings | Templates keep 2–4 digits; a short ending matches a longer one of the same bank, and the account keeps the longest | HNB and People's Bank mask all but 2 digits |
 | Card descriptors | A trailing province code (`WPLK`) is dropped and a repeated word collapsed | `CIBMART PILIYANDALA PILIYANDALA WPLK` → `Cibmart Piliyandala` |
 | `RawMessage.sourceRaw` | New field (default `sms`, migrates automatically) | The health check must ignore Simulate-tab messages |
+| Category model name | `TransactionCategory` | `Category` clashes with the Objective-C runtime typedef imported by Foundation |
+| `Transaction.categoryName` | Replaced by a `category` relationship (+ `originalMerchant`, `note`, `isReviewed`, `categoryIsManual`) | Phase 2 categories; lightweight migration |
+| Spending total | Debits − refunds, excluding the Transfers category; other currencies counted separately | ATM withdrawals and own-account transfers would double count |
+| Rules on past transactions | Only when the user picks "update past"; transactions whose category was picked by hand keep it | Don't silently overwrite manual choices |
 | Duplicate summaries etc. | `Logged …`, `Logged for review: …`, `Ignored: …`, `Duplicate: … already logged`, `Failed: …` | |
 
 ## Known limitations (Phase 1)

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 import SpendCore
 
@@ -69,5 +70,93 @@ struct ReviewBadge: View {
             .padding(.vertical, 2)
             .foregroundStyle(.orange)
             .background(Color.orange.opacity(0.15), in: Capsule())
+    }
+}
+
+extension TransactionType {
+    /// User-facing name.
+    var label: String {
+        switch self {
+        case .debit: "Expense"
+        case .credit: "Income"
+        case .refund: "Refund"
+        case .transfer: "Transfer"
+        case .unknown: "Unknown"
+        }
+    }
+
+    /// The types a user can pick when adding or editing.
+    static let editable: [TransactionType] = [.debit, .credit, .refund, .transfer]
+}
+
+extension Decimal {
+    var doubleValue: Double { NSDecimalNumber(decimal: self).doubleValue }
+
+    /// `2450`, `2450.5`: for pre-filling a text field.
+    var plainString: String { NSDecimalNumber(decimal: self).stringValue }
+}
+
+extension Color {
+    /// `#RRGGBB`; invalid input gives grey.
+    init(hex: String) {
+        let digits = hex.trimmingCharacters(in: CharacterSet(charactersIn: "# "))
+        guard digits.count == 6, let value = UInt64(digits, radix: 16) else {
+            self = .gray
+            return
+        }
+        self.init(
+            red: Double((value >> 16) & 0xFF) / 255,
+            green: Double((value >> 8) & 0xFF) / 255,
+            blue: Double(value & 0xFF) / 255
+        )
+    }
+}
+
+struct CategoryIconView: View {
+    let symbol: String
+    let colorHex: String
+    var size: CGFloat = 32
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: size * 0.45, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Color(hex: colorHex), in: Circle())
+    }
+}
+
+struct CategoryIcon: View {
+    let category: TransactionCategory?
+    var size: CGFloat = 32
+
+    var body: some View {
+        CategoryIconView(
+            symbol: category?.symbol ?? "questionmark",
+            colorHex: category?.colorHex ?? "#8E8E93",
+            size: size
+        )
+    }
+}
+
+/// Presents an error message from an optional string.
+struct ErrorAlert: ViewModifier {
+    @Binding var message: String?
+
+    func body(content: Content) -> some View {
+        content.alert(
+            "Something went wrong",
+            isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(message ?? "")
+        }
+    }
+}
+
+extension View {
+    func errorAlert(_ message: Binding<String?>) -> some View {
+        modifier(ErrorAlert(message: message))
     }
 }

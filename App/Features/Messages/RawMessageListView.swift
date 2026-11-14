@@ -8,26 +8,24 @@ struct RawMessageListView: View {
     private var messages: [RawMessage]
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if messages.isEmpty {
-                    ContentUnavailableView(
-                        "No messages yet",
-                        systemImage: "message",
-                        description: Text("SMS received from the Shortcuts automation or the Simulate tab appear here.")
-                    )
-                } else {
-                    List(messages) { message in
-                        NavigationLink {
-                            RawMessageDetailView(message: message)
-                        } label: {
-                            RawMessageRow(message: message)
-                        }
+        Group {
+            if messages.isEmpty {
+                ContentUnavailableView(
+                    "No messages yet",
+                    systemImage: "message",
+                    description: Text("SMS received from the Shortcuts automation or the Simulate tab appear here.")
+                )
+            } else {
+                List(messages) { message in
+                    NavigationLink {
+                        RawMessageDetailView(message: message)
+                    } label: {
+                        RawMessageRow(message: message)
                     }
                 }
             }
-            .navigationTitle("Messages")
         }
+        .navigationTitle("Messages")
     }
 }
 

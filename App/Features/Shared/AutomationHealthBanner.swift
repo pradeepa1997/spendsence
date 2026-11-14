@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 import SpendCore
 
@@ -21,8 +22,6 @@ struct AutomationHealthBanner: View {
             }
             .padding(12)
             .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal)
-            .padding(.bottom, 4)
         }
     }
 
@@ -32,5 +31,29 @@ struct AutomationHealthBanner: View {
         case .neverReceived: "No bank SMS received yet"
         case .stale(let days): "No bank SMS received in \(days) days"
         }
+    }
+}
+
+/// The banner, fed by the latest message from the automation (Simulate-tab messages don't count).
+struct LiveAutomationHealthBanner: View {
+    /// Hide the "never received" state, e.g. when an empty-state view already explains the setup.
+    var suppressNeverReceived = false
+
+    @Query(LiveAutomationHealthBanner.latestAutomationMessage)
+    private var latest: [RawMessage]
+
+    nonisolated private static var latestAutomationMessage: FetchDescriptor<RawMessage> {
+        let sms = TransactionSource.sms.rawValue
+        var descriptor = FetchDescriptor<RawMessage>(
+            predicate: #Predicate { $0.sourceRaw == sms },
+            sortBy: [SortDescriptor(\.receivedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
+    var body: some View {
+        let health = AutomationHealth.evaluate(lastSMSAt: latest.first?.receivedAt)
+        AutomationHealthBanner(health: suppressNeverReceived && health == .neverReceived ? .healthy : health)
     }
 }

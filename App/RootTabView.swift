@@ -1,22 +1,43 @@
 import SpendCore
+import SwiftData
 import SwiftUI
 
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
 
+    @Query(RootTabView.awaitingReview)
+    private var awaitingReview: [SpendCore.Transaction]
+
+    @Query(filter: #Predicate<RawMessage> { $0.statusRaw == "needsReview" })
+    private var reviewMessages: [RawMessage]
+
+    nonisolated private static var awaitingReview: FetchDescriptor<SpendCore.Transaction> {
+        let threshold = ParsingPipeline.autoAcceptThreshold - 1e-9
+        return FetchDescriptor<SpendCore.Transaction>(
+            predicate: #Predicate { $0.confidence < threshold && $0.isReviewed == false }
+        )
+    }
+
+    private var reviewCount: Int {
+        awaitingReview.count + reviewMessages.filter { $0.transaction == nil }.count
+    }
+
     var body: some View {
         TabView {
-            TransactionListView()
+            NavigationStack { DashboardView() }
+                .tabItem { Label("Dashboard", systemImage: "chart.pie.fill") }
+            NavigationStack { TransactionListView() }
                 .tabItem { Label("Transactions", systemImage: "list.bullet.rectangle") }
-            RawMessageListView()
-                .tabItem { Label("Messages", systemImage: "message") }
-            SimulateSMSView()
-                .tabItem { Label("Simulate", systemImage: "hammer") }
+            NavigationStack { ReviewQueueView() }
+                .tabItem { Label("Review", systemImage: "checkmark.circle") }
+                .badge(reviewCount)
+            NavigationStack { MoreView() }
+                .tabItem { Label("More", systemImage: "ellipsis.circle") }
         }
         .task(id: scenePhase) {
-            // Each time the app becomes active, drop ignored messages (OTPs, promos) older than 7 days.
+            // Seed categories, categorise older transactions, purge ignored messages older than 7 days.
             guard scenePhase == .active else { return }
-            await IngestionService.shared.purgeExpiredIgnoredMessages()
+            await IngestionService.shared.prepare()
         }
     }
 }

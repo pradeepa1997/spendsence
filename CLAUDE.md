@@ -1,7 +1,7 @@
 # CLAUDE.md — SpendSense
 
 iOS expense tracker that ingests bank SMS via a Shortcuts automation → App Intent. Fully on-device.
-The authoritative requirements are in `PHASE1_SPEC.md`.
+Requirements: `PHASE1_SPEC.md` (ingestion), `PHASE2_SPEC.md` (categories, editing, review, dashboard).
 
 ## Commands
 ```bash
@@ -14,8 +14,12 @@ xcodebuild -scheme SpendSense -destination 'generic/platform=iOS Simulator' CODE
 - **Never hand-edit `.xcodeproj`.** Change `project.yml` and regenerate. The project file is gitignored.
 - **No third-party dependencies.**
 - Swift 6, strict concurrency. Zero warnings.
-- **Single ingestion path:** the App Intent and the Simulate tab both call `IngestionService.ingest`. Never write a
-  `Transaction` anywhere else. Every SMS-sourced Transaction must have a linked `RawMessage`.
+- **Write paths:** SMS (App Intent, Simulate) → `IngestionService.ingest` only. User edits, manual/cash entries,
+  categories and merchant rules → `TransactionEditor` (on the view's `modelContext`; Siri reaches it via
+  `IngestionService.addExpense`). Views never mutate models directly. Every SMS-sourced Transaction has a `RawMessage`.
+- Categorisation lives in `Categorization/` (`Categorizer` is pure; `CategoryService` touches SwiftData). New keywords
+  go in `Categorizer.keywordGroups` with a test in `Phase2Tests`.
+- `TransactionCategory` (not `Category`, which clashes with the Objective-C runtime typedef).
 - The RawMessage is persisted **before** parsing; `ingest` never throws.
 - Everything under `SpendCore/Sources/SpendCore/Parsing` is pure, `Sendable`, and has no SwiftData import.
 - Only one `ModelContainer` per process: `SharedStore.containerResult`. The app injects it; `IngestionService.shared` uses it.
@@ -24,8 +28,10 @@ xcodebuild -scheme SpendSense -destination 'generic/platform=iOS Simulator' CODE
 - Bump `ParsingPipeline.version` whenever parsing output changes for existing messages.
 
 ## Layout
-- `App/`: SwiftUI app, App Intents (`App/Intents`), feature views (`App/Features`).
-- `SpendCore/Sources/SpendCore/`: `Models`, `Storage`, `Parsing`, `Ingestion`, `Support`, `Resources/templates.json`.
+- `App/`: SwiftUI app, App Intents (`App/Intents`), feature views (`App/Features`: Dashboard, Transactions, Review, More,
+  Messages, Simulate, Shared). Tabs: Dashboard · Transactions · Review · More.
+- `SpendCore/Sources/SpendCore/`: `Models`, `Storage`, `Parsing`, `Ingestion`, `Categorization`, `Editing`, `Summary`,
+  `Support`, `Resources/templates.json`.
 - `SpendCore/Tests/SpendCoreTests/`: Swift Testing suites + JSON fixture corpus.
 
 ## Spec deviations (agreed)
