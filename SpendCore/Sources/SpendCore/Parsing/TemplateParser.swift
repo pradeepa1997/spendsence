@@ -49,7 +49,8 @@ public struct TemplateParser: Sendable {
                 occurredAt: occurredAt,
                 bankName: compiled.template.bankName,
                 confidence: Double(points) / 100,
-                matchedTemplateID: compiled.template.id
+                matchedTemplateID: compiled.template.id,
+                accountKind: compiled.template.accountKind.flatMap(AccountKind.init(rawValue:))
             )
         }
         return nil

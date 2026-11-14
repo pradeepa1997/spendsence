@@ -13,7 +13,8 @@
       "refund"
     ],
     "dateFormat": "dd.MM.yy",
-    "timeFormat": "HH:mm"
+    "timeFormat": "HH:mm",
+    "accountKind": "debitCard"
   },
   {
     "id": "hnb_account",
@@ -29,7 +30,8 @@
       "credited"
     ],
     "dateFormat": "dd/MM/yy",
-    "timeFormat": "HH:mm:ss"
+    "timeFormat": "HH:mm:ss",
+    "accountKind": "bankAccount"
   },
   {
     "id": "dfcc_card",
@@ -46,7 +48,8 @@
       "reversed"
     ],
     "dateFormat": "dd/MMM/yyyy",
-    "timeFormat": "HH:mm"
+    "timeFormat": "HH:mm",
+    "accountKind": "creditCard"
   },
   {
     "id": "dfcc_account",
@@ -62,7 +65,8 @@
       "credited"
     ],
     "dateFormat": "d MMM yyyy",
-    "timeFormat": null
+    "timeFormat": null,
+    "accountKind": "bankAccount"
   },
   {
     "id": "ndb_card",
@@ -79,7 +83,8 @@
       "reversed"
     ],
     "dateFormat": "yyyy-MM-dd",
-    "timeFormat": "HH:mm:ss"
+    "timeFormat": "HH:mm:ss",
+    "accountKind": "creditCard"
   },
   {
     "id": "seylan_account",
@@ -95,7 +100,8 @@
       "credited"
     ],
     "dateFormat": "dd/MM/yyyy",
-    "timeFormat": "hh:mm:ss a"
+    "timeFormat": "hh:mm:ss a",
+    "accountKind": "bankAccount"
   },
   {
     "id": "seylan_card",
@@ -113,7 +119,8 @@
       "refund"
     ],
     "dateFormat": "dd/MM/yyyy",
-    "timeFormat": "hh:mm:ss a"
+    "timeFormat": "hh:mm:ss a",
+    "accountKind": "creditCard"
   },
   {
     "id": "peoples_account",
@@ -130,7 +137,8 @@
       "credited"
     ],
     "dateFormat": "dd/MM/yyyy",
-    "timeFormat": "H:mm"
+    "timeFormat": "H:mm",
+    "accountKind": "bankAccount"
   },
   {
     "id": "generic_card_purchase",
@@ -144,7 +152,8 @@
     ],
     "creditKeywords": [],
     "dateFormat": "dd/MM/yy",
-    "timeFormat": null
+    "timeFormat": null,
+    "accountKind": "debitCard"
   },
   {
     "id": "generic_account_credit",
@@ -160,7 +169,8 @@
       "credited"
     ],
     "dateFormat": "dd-MM-yyyy",
-    "timeFormat": null
+    "timeFormat": null,
+    "accountKind": "bankAccount"
   },
   {
     "id": "generic_pos_txn",
@@ -177,6 +187,7 @@
       "reversed"
     ],
     "dateFormat": null,
-    "timeFormat": null
+    "timeFormat": null,
+    "accountKind": null
   }
 ]

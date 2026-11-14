@@ -12,6 +12,8 @@ public struct ParsedTransaction: Sendable, Equatable {
     public var bankName: String?
     public var confidence: Double
     public var matchedTemplateID: String?
+    /// What kind of account the SMS is about, when the template or wording says so.
+    public var accountKind: AccountKind?
 
     public init(
         amount: Decimal,
@@ -23,7 +25,8 @@ public struct ParsedTransaction: Sendable, Equatable {
         occurredAt: Date? = nil,
         bankName: String? = nil,
         confidence: Double,
-        matchedTemplateID: String? = nil
+        matchedTemplateID: String? = nil,
+        accountKind: AccountKind? = nil
     ) {
         self.amount = amount
         self.currency = currency
@@ -35,5 +38,6 @@ public struct ParsedTransaction: Sendable, Equatable {
         self.bankName = bankName
         self.confidence = confidence
         self.matchedTemplateID = matchedTemplateID
+        self.accountKind = accountKind
     }
 }

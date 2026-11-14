@@ -5,7 +5,8 @@ import Foundation
 public struct ParsingPipeline: Sendable {
     /// Bump whenever parsing output for an existing message would change.
     /// v2: real Sri Lankan bank templates, amount-after-currency detection, card descriptor cleanup.
-    public static let version = 2
+    /// v3: account kind detection.
+    public static let version = 3
     /// Transactions at or above this confidence are auto-accepted; below it they are saved as needsReview.
     public static let autoAcceptThreshold = 0.75
 

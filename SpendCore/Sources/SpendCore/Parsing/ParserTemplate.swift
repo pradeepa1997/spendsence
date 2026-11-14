@@ -16,6 +16,9 @@ public struct ParserTemplate: Codable, Sendable, Equatable, Identifiable {
     public var dateFormat: String?
     /// `DateFormatter` format for the `time` group, e.g. `HH:mm` or `hh:mm:ss a`. Used together with `dateFormat`.
     public var timeFormat: String?
+    /// `AccountKind` raw value (`bankAccount`, `debitCard`, `creditCard`). Kept as a string so an unknown value in
+    /// the JSON can't break loading the whole template file.
+    public var accountKind: String?
 
     public init(
         id: String,
@@ -25,7 +28,8 @@ public struct ParserTemplate: Codable, Sendable, Equatable, Identifiable {
         debitKeywords: [String],
         creditKeywords: [String],
         dateFormat: String? = nil,
-        timeFormat: String? = nil
+        timeFormat: String? = nil,
+        accountKind: String? = nil
     ) {
         self.id = id
         self.bankName = bankName
@@ -35,5 +39,6 @@ public struct ParserTemplate: Codable, Sendable, Equatable, Identifiable {
         self.creditKeywords = creditKeywords
         self.dateFormat = dateFormat
         self.timeFormat = timeFormat
+        self.accountKind = accountKind
     }
 }

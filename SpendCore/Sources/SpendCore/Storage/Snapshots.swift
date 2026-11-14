@@ -38,6 +38,7 @@ public struct TransactionSnapshot: Sendable, Equatable {
     public let bankName: String?
     public let last4: String?
     public let accountDisplayName: String?
+    public let accountKind: AccountKind?
     public let rawMessageID: UUID?
     public let originalMerchant: String?
     public let categoryName: String?
@@ -58,12 +59,35 @@ public struct TransactionSnapshot: Sendable, Equatable {
         bankName = transaction.account?.bankName
         last4 = transaction.account?.last4
         accountDisplayName = transaction.account?.displayName
+        accountKind = transaction.account?.kind
         rawMessageID = transaction.rawMessage?.id
         originalMerchant = transaction.originalMerchant
         categoryName = transaction.category?.name
         categorySystemKey = transaction.category?.systemKey
         isReviewed = transaction.isReviewed
         note = transaction.note
+    }
+}
+
+public struct AccountSnapshot: Sendable, Equatable {
+    public let id: UUID
+    public let bankName: String
+    public let last4: String?
+    public let displayName: String
+    public let kind: AccountKind
+    public let transactionCount: Int
+    public let mergedKeys: [String]
+    public let balance: AccountBalance
+
+    init(_ account: Account) {
+        id = account.id
+        bankName = account.bankName
+        last4 = account.last4
+        displayName = account.displayName
+        kind = account.kind
+        transactionCount = account.transactions.count
+        mergedKeys = account.mergedKeys
+        balance = account.balance
     }
 }
 

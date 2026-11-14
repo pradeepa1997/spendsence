@@ -55,12 +55,16 @@ public enum EditorError: Error, LocalizedError, Equatable {
     case invalidAmount
     case emptyName
     case systemCategoryCannotBeDeleted
+    case invalidCreditLimit
+    case cannotMergeIntoItself
 
     public var errorDescription: String? {
         switch self {
         case .invalidAmount: "Enter an amount greater than 0."
         case .emptyName: "Enter a name."
         case .systemCategoryCannotBeDeleted: "Built-in categories can be renamed but not deleted."
+        case .invalidCreditLimit: "The credit limit must be greater than 0."
+        case .cannotMergeIntoItself: "Choose a different account to merge into."
         }
     }
 }
@@ -275,6 +279,69 @@ public struct TransactionEditor {
         try save()
     }
 
+    // MARK: Accounts
+
+    /// Edits an account. Choosing a kind stops SMS detection from changing it.
+    public func updateAccount(
+        _ account: Account,
+        name: String,
+        kind: AccountKind,
+        creditLimit: Decimal?,
+        lowBalanceThreshold: Decimal?,
+        isHidden: Bool
+    ) throws {
+        guard let name = Self.clean(name) else { throw EditorError.emptyName }
+        if let creditLimit, creditLimit <= 0 { throw EditorError.invalidCreditLimit }
+        account.displayName = name
+        if kind != account.kind {
+            account.kind = kind
+            account.kindIsManual = true
+        }
+        account.creditLimit = kind == .creditCard ? creditLimit : nil
+        account.lowBalanceThreshold = lowBalanceThreshold
+        account.isHidden = isHidden
+        try save()
+    }
+
+    /// "Set balance": the balance (or available credit) at `date`. Later transactions adjust it as usual.
+    public func setBalance(_ account: Account, to amount: Decimal, at date: Date = .now) throws {
+        account.manualBalance = amount
+        account.manualBalanceAt = date
+        try save()
+    }
+
+    public func clearManualBalance(_ account: Account) throws {
+        account.manualBalance = nil
+        account.manualBalanceAt = nil
+        try save()
+    }
+
+    /// Moves `source`'s transactions into `target` and deletes `source`. Its (bank, ending) is kept as an alias on
+    /// `target`, so future SMS for it land in `target`.
+    public func merge(_ source: Account, into target: Account) throws {
+        guard source.id != target.id else { throw EditorError.cannotMergeIntoItself }
+        for transaction in source.transactions {
+            transaction.account = target
+        }
+        var keys = target.mergedKeys
+        for key in [Account.aliasKey(bankName: source.bankName, last4: source.last4)] + source.mergedKeys
+        where !keys.contains(key) {
+            keys.append(key)
+        }
+        target.mergedKeys = keys
+        if target.kind == .unknown && !target.kindIsManual {
+            target.kind = source.kind
+        }
+        if target.creditLimit == nil { target.creditLimit = source.creditLimit }
+        if target.lowBalanceThreshold == nil { target.lowBalanceThreshold = source.lowBalanceThreshold }
+        if let sourceAt = source.manualBalanceAt, sourceAt > (target.manualBalanceAt ?? .distantPast) {
+            target.manualBalance = source.manualBalance
+            target.manualBalanceAt = sourceAt
+        }
+        context.delete(source)
+        try save()
+    }
+
     /// Dev convenience: wipes everything, then re-seeds the default categories.
     public func deleteAllData() throws {
         for transaction in try context.fetch(FetchDescriptor<Transaction>()) { context.delete(transaction) }
@@ -318,7 +385,7 @@ public struct TransactionEditor {
         if let cash = cashAccounts.first(where: { $0.last4 == nil }) {
             return cash
         }
-        let cash = Account(bankName: cashName, last4: nil, displayName: cashName)
+        let cash = Account(bankName: cashName, last4: nil, displayName: cashName, kind: .cash)
         context.insert(cash)
         return cash
     }

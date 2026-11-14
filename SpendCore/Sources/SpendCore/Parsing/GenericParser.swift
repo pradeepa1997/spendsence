@@ -58,8 +58,22 @@ public struct GenericParser: Sendable {
             occurredAt: nil,
             bankName: nil,
             confidence: Double(points) / 100,
-            matchedTemplateID: nil
+            matchedTemplateID: nil,
+            accountKind: Self.inferAccountKind(from: text)
         )
+    }
+
+    static let creditCardWording = CompiledRegex(#"\bcredit\s+card\b|\bcr\s+card\b"#)
+    static let debitCardWording = CompiledRegex(#"\bdebit\s+card\b"#)
+    static let cardWording = CompiledRegex(#"\bcard\b"#)
+    static let accountWording = CompiledRegex(#"\ba/c\b|\bacct\b|\baccount\b"#)
+
+    /// "credit card" → creditCard, "debit card" → debitCard, A/C or account without any card → bankAccount.
+    static func inferAccountKind(from text: String) -> AccountKind? {
+        if creditCardWording.contains(text) { return .creditCard }
+        if debitCardWording.contains(text) { return .debitCard }
+        if accountWording.contains(text), !cardWording.contains(text) { return .bankAccount }
+        return nil
     }
 
     static func findAmount(in text: String) -> (currency: String, amount: Decimal)? {

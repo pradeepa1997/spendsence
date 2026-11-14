@@ -48,7 +48,11 @@ enum IngestionRules {
     }
 }
 
-/// All SwiftData writes go through this actor (owned by `IngestionService`).
+/// All SwiftData writes from ingestion and Siri go through this actor (owned by `IngestionService`).
+///
+/// Each operation uses a **fresh `ModelContext`**: the app edits the same store on its main context, and a long-lived
+/// background context would keep stale copies of objects the user has since changed (an account's kind, a rule).
+/// Operations hand each other `PersistentIdentifier`s, never model objects.
 @ModelActor
 public actor TransactionStore {
     public enum CommitOutcome: Sendable, Equatable {
@@ -64,18 +68,20 @@ public actor TransactionStore {
         receivedAt: Date,
         source: TransactionSource = .sms
     ) throws -> PersistentIdentifier {
+        let context = makeContext()
         let raw = RawMessage(body: body, sender: sender, receivedAt: receivedAt, source: source)
-        modelContext.insert(raw)
-        try saveOrRollback()
+        context.insert(raw)
+        try save(context)
         return raw.persistentModelID
     }
 
     public func updateStatus(_ rawID: PersistentIdentifier, status: MessageStatus, reason: String?) throws {
-        let raw = try rawMessage(rawID)
+        let context = makeContext()
+        let raw = try rawMessage(rawID, in: context)
         raw.status = status
         raw.failureReason = reason
         raw.parserVersion = ParsingPipeline.version
-        try saveOrRollback()
+        try save(context)
     }
 
     // MARK: Dedup + save
@@ -89,22 +95,22 @@ public actor TransactionStore {
         status: MessageStatus,
         reason: String?
     ) throws -> CommitOutcome {
-        let raw = try rawMessage(rawID)
-        if try findDuplicate(
-            of: parsed, bodyHash: raw.bodyHash, receivedAt: raw.receivedAt, sender: raw.sender, excluding: rawID
+        let context = makeContext()
+        let raw = try rawMessage(rawID, in: context)
+        if try isDuplicate(
+            parsed, bodyHash: raw.bodyHash, receivedAt: raw.receivedAt, sender: raw.sender, excluding: rawID, in: context
         ) {
             raw.status = .duplicate
             raw.failureReason = nil
             raw.parserVersion = ParsingPipeline.version
-            try saveOrRollback()
+            try save(context)
             return .duplicate
         }
-        let id = try saveTransaction(parsed, for: rawID, source: source, status: status, reason: reason)
-        return .saved(id)
+        return .saved(try insertTransaction(parsed, raw: raw, source: source, status: status, reason: reason, in: context))
     }
 
     /// A message is a duplicate if an earlier accepted message has the same body hash, or an existing
-    /// transaction has the same amount + currency + account (bankName, last4) within ±3 minutes.
+    /// transaction has the same amount + currency + account (bankName, last4 or merge alias) within ±3 minutes.
     public func findDuplicate(
         of parsed: ParsedTransaction,
         bodyHash: String,
@@ -112,26 +118,9 @@ public actor TransactionStore {
         sender: String?,
         excluding rawID: PersistentIdentifier? = nil
     ) throws -> Bool {
-        let sameBody = try modelContext.fetch(
-            FetchDescriptor<RawMessage>(predicate: #Predicate { $0.bodyHash == bodyHash })
+        try isDuplicate(
+            parsed, bodyHash: bodyHash, receivedAt: receivedAt, sender: sender, excluding: rawID, in: makeContext()
         )
-        if sameBody.contains(where: { $0.persistentModelID != rawID && IngestionRules.blocksIdenticalBody($0.status) }) {
-            return true
-        }
-
-        let occurredAt = parsed.occurredAt ?? receivedAt
-        let lower = occurredAt.addingTimeInterval(-IngestionRules.duplicateWindow)
-        let upper = occurredAt.addingTimeInterval(IngestionRules.duplicateWindow)
-        let nearby = try modelContext.fetch(
-            FetchDescriptor<Transaction>(predicate: #Predicate { $0.occurredAt >= lower && $0.occurredAt <= upper })
-        )
-        let bank = IngestionRules.bankName(for: parsed, sender: sender)
-        return nearby.contains { existing in
-            existing.amount == parsed.amount
-                && existing.currency == parsed.currency
-                && existing.account?.bankName == bank
-                && existing.account.map { IngestionRules.sameAccount($0.last4, parsed.last4) } == true
-        }
     }
 
     @discardableResult
@@ -142,111 +131,65 @@ public actor TransactionStore {
         status: MessageStatus = .parsed,
         reason: String? = nil
     ) throws -> UUID {
-        let raw = try rawMessage(rawID)
-        let account = try upsertAccount(
-            bankName: IngestionRules.bankName(for: parsed, sender: raw.sender),
-            last4: parsed.last4
-        )
-        let transaction = Transaction(
-            amount: parsed.amount,
-            currency: parsed.currency,
-            type: parsed.type,
-            merchant: parsed.merchant,
-            occurredAt: parsed.occurredAt ?? raw.receivedAt,
-            balanceAfter: parsed.balanceAfter,
-            confidence: parsed.confidence,
-            source: source
-        )
-        modelContext.insert(transaction)
-        transaction.account = account
-        transaction.rawMessage = raw
-
-        // Merchant rules (rename + category), then built-in keywords.
-        let resolution = try CategoryService.resolve(merchant: parsed.merchant, type: parsed.type, in: modelContext)
-        transaction.category = resolution.category
-        if let renamed = resolution.renamedMerchant {
-            transaction.merchant = renamed
-        }
-        resolution.rule?.hitCount += 1
-        raw.status = status
-        raw.failureReason = reason
-        raw.parserVersion = ParsingPipeline.version
-        try saveOrRollback()
-        return transaction.id
-    }
-
-    /// Matches on (bankName, last4); a nil last4 maps to a single "<bank> (unknown)" account.
-    /// A short ending (`95`) matches a longer one (`7795`); the account keeps the longest ending seen.
-    /// Does not save; callers save as part of their own unit of work.
-    public func upsertAccount(bankName: String, last4: String?) throws -> Account {
-        let candidates = try modelContext.fetch(
-            FetchDescriptor<Account>(predicate: #Predicate { $0.bankName == bankName })
-        )
-        if let existing = candidates.first(where: { $0.last4 == last4 }) {
-            return existing
-        }
-        if let compatible = candidates.first(where: { IngestionRules.sameAccount($0.last4, last4) }) {
-            if let last4, last4.count > (compatible.last4?.count ?? 0) {
-                let hadDefaultName = compatible.displayName
-                    == Account.defaultDisplayName(bankName: compatible.bankName, last4: compatible.last4)
-                compatible.last4 = last4
-                if hadDefaultName {
-                    compatible.displayName = Account.defaultDisplayName(bankName: compatible.bankName, last4: last4)
-                }
-            }
-            return compatible
-        }
-        let account = Account(bankName: bankName, last4: last4)
-        modelContext.insert(account)
-        return account
+        let context = makeContext()
+        let raw = try rawMessage(rawID, in: context)
+        return try insertTransaction(parsed, raw: raw, source: source, status: status, reason: reason, in: context)
     }
 
     // MARK: Maintenance & diagnostics
 
     public func deleteAll() throws {
-        try TransactionEditor(context: modelContext).deleteAllData()
+        try TransactionEditor(context: makeContext()).deleteAllData()
     }
 
-    /// Seeds default categories and categorises anything uncategorised. Returns how many were back-filled.
+    /// Seeds default categories, fixes up legacy accounts and categorises anything uncategorised.
+    /// Returns how many transactions were back-filled.
     @discardableResult
     public func prepare() throws -> Int {
-        try CategoryService.ensureDefaultCategories(in: modelContext)
-        let backfilled = try CategoryService.backfillUncategorized(in: modelContext)
-        try saveOrRollback()
+        let context = makeContext()
+        try CategoryService.ensureDefaultCategories(in: context)
+        try AccountService.prepare(in: context)
+        let backfilled = try CategoryService.backfillUncategorized(in: context)
+        try save(context)
         return backfilled
     }
 
     /// Manual entry (Siri / Shortcuts). Same logic the app uses on its main context.
     public func addManual(_ draft: TransactionDraft) throws -> TransactionSnapshot {
-        TransactionSnapshot(try TransactionEditor(context: modelContext).addManual(draft))
+        TransactionSnapshot(try TransactionEditor(context: makeContext()).addManual(draft))
     }
 
     public func facts(in interval: DateInterval) throws -> [TransactionFact] {
         let start = interval.start
         let end = interval.end
-        return try modelContext.fetch(
+        return try makeContext().fetch(
             FetchDescriptor<Transaction>(predicate: #Predicate { $0.occurredAt >= start && $0.occurredAt < end })
         ).map { TransactionFact($0) }
     }
 
     public func categoryNames() throws -> [String] {
-        try modelContext.fetch(FetchDescriptor<TransactionCategory>(sortBy: [SortDescriptor(\.sortOrder)])).map(\.name)
+        try makeContext().fetch(FetchDescriptor<TransactionCategory>(sortBy: [SortDescriptor(\.sortOrder)])).map(\.name)
+    }
+
+    public func accountSnapshots() throws -> [AccountSnapshot] {
+        try makeContext().fetch(FetchDescriptor<Account>(sortBy: [SortDescriptor(\.displayName)])).map { AccountSnapshot($0) }
     }
 
     public func ruleCount() throws -> Int {
-        try modelContext.fetchCount(FetchDescriptor<MerchantRule>())
+        try makeContext().fetchCount(FetchDescriptor<MerchantRule>())
     }
 
     /// Deletes ignored messages (OTPs, promotions, reminders) received before `cutoff`. Returns how many.
     @discardableResult
     public func purgeIgnoredMessages(olderThan cutoff: Date) throws -> Int {
+        let context = makeContext()
         let ignored = MessageStatus.ignored.rawValue
-        let expired = try modelContext.fetch(
+        let expired = try context.fetch(
             FetchDescriptor<RawMessage>(predicate: #Predicate { $0.statusRaw == ignored && $0.receivedAt < cutoff })
         )
         guard !expired.isEmpty else { return 0 }
-        for message in expired { modelContext.delete(message) }
-        try saveOrRollback()
+        for message in expired { context.delete(message) }
+        try save(context)
         return expired.count
     }
 
@@ -258,35 +201,114 @@ public actor TransactionStore {
             sortBy: [SortDescriptor(\.receivedAt, order: .reverse)]
         )
         descriptor.fetchLimit = 1
-        return try modelContext.fetch(descriptor).first?.receivedAt
+        return try makeContext().fetch(descriptor).first?.receivedAt
     }
 
     public func rawMessageSnapshots() throws -> [RawMessageSnapshot] {
-        try modelContext.fetch(FetchDescriptor<RawMessage>(sortBy: [SortDescriptor(\.receivedAt)]))
+        try makeContext().fetch(FetchDescriptor<RawMessage>(sortBy: [SortDescriptor(\.receivedAt)]))
             .map(RawMessageSnapshot.init)
     }
 
     public func transactionSnapshots() throws -> [TransactionSnapshot] {
-        try modelContext.fetch(FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.occurredAt)]))
+        try makeContext().fetch(FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.occurredAt)]))
             .map(TransactionSnapshot.init)
     }
 
     public func accountCount() throws -> Int {
-        try modelContext.fetchCount(FetchDescriptor<Account>())
+        try makeContext().fetchCount(FetchDescriptor<Account>())
     }
 
     // MARK: Private
 
-    private func rawMessage(_ id: PersistentIdentifier) throws -> RawMessage {
-        guard let raw = self[id, as: RawMessage.self] else { throw StoreError.rawMessageNotFound }
+    private func makeContext() -> ModelContext {
+        let context = ModelContext(modelContainer)
+        context.autosaveEnabled = false
+        return context
+    }
+
+    private func isDuplicate(
+        _ parsed: ParsedTransaction,
+        bodyHash: String,
+        receivedAt: Date,
+        sender: String?,
+        excluding rawID: PersistentIdentifier?,
+        in context: ModelContext
+    ) throws -> Bool {
+        let sameBody = try context.fetch(
+            FetchDescriptor<RawMessage>(predicate: #Predicate { $0.bodyHash == bodyHash })
+        )
+        if sameBody.contains(where: { $0.persistentModelID != rawID && IngestionRules.blocksIdenticalBody($0.status) }) {
+            return true
+        }
+
+        let occurredAt = parsed.occurredAt ?? receivedAt
+        let lower = occurredAt.addingTimeInterval(-IngestionRules.duplicateWindow)
+        let upper = occurredAt.addingTimeInterval(IngestionRules.duplicateWindow)
+        let nearby = try context.fetch(
+            FetchDescriptor<Transaction>(predicate: #Predicate { $0.occurredAt >= lower && $0.occurredAt <= upper })
+        )
+        let bank = IngestionRules.bankName(for: parsed, sender: sender)
+        return nearby.contains { existing in
+            existing.amount == parsed.amount
+                && existing.currency == parsed.currency
+                && existing.account?.matches(bankName: bank, last4: parsed.last4) == true
+        }
+    }
+
+    private func insertTransaction(
+        _ parsed: ParsedTransaction,
+        raw: RawMessage,
+        source: TransactionSource,
+        status: MessageStatus,
+        reason: String?,
+        in context: ModelContext
+    ) throws -> UUID {
+        let account = try AccountService.upsert(
+            bankName: IngestionRules.bankName(for: parsed, sender: raw.sender),
+            last4: parsed.last4,
+            detectedKind: parsed.accountKind,
+            in: context
+        )
+        let transaction = Transaction(
+            amount: parsed.amount,
+            currency: parsed.currency,
+            type: parsed.type,
+            merchant: parsed.merchant,
+            occurredAt: parsed.occurredAt ?? raw.receivedAt,
+            balanceAfter: parsed.balanceAfter,
+            confidence: parsed.confidence,
+            source: source
+        )
+        context.insert(transaction)
+        transaction.account = account
+        transaction.rawMessage = raw
+
+        // Merchant rules (rename + category), then built-in keywords.
+        let resolution = try CategoryService.resolve(merchant: parsed.merchant, type: parsed.type, in: context)
+        transaction.category = resolution.category
+        if let renamed = resolution.renamedMerchant {
+            transaction.merchant = renamed
+        }
+        resolution.rule?.hitCount += 1
+        raw.status = status
+        raw.failureReason = reason
+        raw.parserVersion = ParsingPipeline.version
+        try save(context)
+        return transaction.id
+    }
+
+    private func rawMessage(_ id: PersistentIdentifier, in context: ModelContext) throws -> RawMessage {
+        var descriptor = FetchDescriptor<RawMessage>(predicate: #Predicate { $0.persistentModelID == id })
+        descriptor.fetchLimit = 1
+        guard let raw = try context.fetch(descriptor).first else { throw StoreError.rawMessageNotFound }
         return raw
     }
 
-    private func saveOrRollback() throws {
+    private func save(_ context: ModelContext) throws {
         do {
-            try modelContext.save()
+            try context.save()
         } catch {
-            modelContext.rollback()
+            context.rollback()
             throw error
         }
     }
