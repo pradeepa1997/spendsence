@@ -45,9 +45,26 @@ Simulate tab ──────────────────────�
 ```
 - `SpendCore/Sources/SpendCore/Parsing`: pure, `Sendable`, no SwiftData.
 - `SpendCore/Sources/SpendCore/Resources/templates.json`: bank templates as data.
-- `SpendCore/Tests/SpendCoreTests/Fixtures/sms_samples.json`: the test corpus (27 synthetic samples).
+- `SpendCore/Tests/SpendCoreTests/Fixtures/sms_samples.json`: the test corpus (38 samples: 27 synthetic, 11 anonymized real bank formats).
 - Store: `<App Group>/Store/SpendSense.store`, directory protection
   `completeUntilFirstUserAuthentication`, so writes work while the phone is locked.
+
+## Supported banks
+| Bank | Formats | Template id |
+|---|---|---|
+| HNB | Debit card alert (`HNB SMS ALERT:…`), account credit/debit (`… credited to Ac No:…`) | `hnb_card_alert`, `hnb_account` |
+| DFCC | Credit card (`ALERT CR CARD:…`), account (`Your A/C No: … is debited with …`) | `dfcc_card`, `dfcc_account` |
+| NDB | Credit card (`Card 4815…**** Debited …`) | `ndb_card` |
+| Seylan | Account (`Your Account … was credited by …`), card (`Seylan Card …0734 debit Txn …`) | `seylan_account`, `seylan_card` |
+| People's Bank | Account (`Your A/C 335-… has been debited by Rs. …`) | `peoples_account` |
+
+Three `generic_*` placeholder templates from Phase 1 remain as a last resort. Account endings with only 2 visible
+digits (HNB, People's Bank) are matched to the same account as a longer ending, e.g. `…95` and `…7795`.
+
+## Automation health & cleanup
+- The Transactions tab shows a warning when no SMS has arrived from the automation for more than 5 days
+  (`AutomationHealth`). Simulate-tab messages don't count.
+- Ignored messages (OTPs, promotions, reminders) are deleted 7 days after they arrive, each time the app becomes active.
 
 ## Adding a real bank (TODO for Pradeepa)
 1. Add real anonymized SMS to `sms_samples.json`. Replace names, card/account digits, and reference
@@ -55,7 +72,9 @@ Simulate tab ──────────────────────�
 2. Run `swift test`. Failing fixtures print their `id`.
 3. Add or adjust a template in `templates.json` until it's green. Templates are matched against
    *normalized* text: whitespace is collapsed, and `Rs.`/`Rs`/`SLRs` become `LKR` followed by a space.
-   Use named groups `amount` (required), `currency`, `merchant`, `last4`, `balance`, `date` + `dateFormat`.
+   Use named groups `amount` (required), `currency`, `merchant`, `last4` (last 2–4 visible digits), `balance`,
+   `date` + `dateFormat`, and `time` + `timeFormat` (e.g. `HH:mm`, `hh:mm:ss a`). Month names parse in any case.
+   Fixtures can set `receivedAt` (ISO-8601) and `expect.occurredAt` (`yyyy-MM-dd HH:mm`, local time).
 4. Bump `ParsingPipeline.version` if outputs for existing messages change.
 
 ## Manual acceptance test (real iPhone)
@@ -97,6 +116,10 @@ message → ▶︎.
 | Shared container | `SharedStore.containerResult` (lazy, in SpendCore); the app injects it and `IngestionService.shared` uses it | Guarantees one container per process |
 | `upsertAccount` | Public on the store actor but only called inside it | `Account` isn't `Sendable`; returning it across actors would break Swift 6 rules |
 | Confidence maths | Integer points ÷ 100 | `0.6 + 0.1 + 0.05` isn't exactly `0.75` in floating point |
+| Amount after currency | `570.47 LKR` counts as an amount for classification | HNB card alerts have no verb and put the code after the number |
+| Account endings | Templates keep 2–4 digits; a short ending matches a longer one of the same bank, and the account keeps the longest | HNB and People's Bank mask all but 2 digits |
+| Card descriptors | A trailing province code (`WPLK`) is dropped and a repeated word collapsed | `CIBMART PILIYANDALA PILIYANDALA WPLK` → `Cibmart Piliyandala` |
+| `RawMessage.sourceRaw` | New field (default `sms`, migrates automatically) | The health check must ignore Simulate-tab messages |
 | Duplicate summaries etc. | `Logged …`, `Logged for review: …`, `Ignored: …`, `Duplicate: … already logged`, `Failed: …` | |
 
 ## Known limitations (Phase 1)

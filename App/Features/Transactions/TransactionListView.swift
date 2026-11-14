@@ -6,6 +6,27 @@ struct TransactionListView: View {
     @Query(sort: \SpendCore.Transaction.occurredAt, order: .reverse)
     private var transactions: [SpendCore.Transaction]
 
+    /// The latest message delivered by the Shortcuts automation (Simulate-tab messages don't count).
+    @Query(TransactionListView.latestAutomationMessage)
+    private var latestAutomationMessages: [RawMessage]
+
+    nonisolated private static var latestAutomationMessage: FetchDescriptor<RawMessage> {
+        let sms = TransactionSource.sms.rawValue
+        var descriptor = FetchDescriptor<RawMessage>(
+            predicate: #Predicate { $0.sourceRaw == sms },
+            sortBy: [SortDescriptor(\.receivedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
+    private var health: AutomationHealth {
+        let health = AutomationHealth.evaluate(lastSMSAt: latestAutomationMessages.first?.receivedAt)
+        // With an empty list, the empty state already explains the setup; don't stack a banner on top.
+        if health == .neverReceived && transactions.isEmpty { return .healthy }
+        return health
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -30,6 +51,9 @@ struct TransactionListView: View {
                         }
                     }
                 }
+            }
+            .safeAreaInset(edge: .top) {
+                AutomationHealthBanner(health: health)
             }
             .navigationTitle("Transactions")
         }

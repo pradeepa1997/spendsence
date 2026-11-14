@@ -58,8 +58,13 @@ public actor TransactionStore {
 
     // MARK: Raw messages
 
-    public func insertRawMessage(body: String, sender: String?, receivedAt: Date) throws -> PersistentIdentifier {
-        let raw = RawMessage(body: body, sender: sender, receivedAt: receivedAt)
+    public func insertRawMessage(
+        body: String,
+        sender: String?,
+        receivedAt: Date,
+        source: TransactionSource = .sms
+    ) throws -> PersistentIdentifier {
+        let raw = RawMessage(body: body, sender: sender, receivedAt: receivedAt, source: source)
         modelContext.insert(raw)
         try saveOrRollback()
         return raw.persistentModelID
@@ -195,6 +200,30 @@ public actor TransactionStore {
         for raw in try modelContext.fetch(FetchDescriptor<RawMessage>()) { modelContext.delete(raw) }
         for account in try modelContext.fetch(FetchDescriptor<Account>()) { modelContext.delete(account) }
         try saveOrRollback()
+    }
+
+    /// Deletes ignored messages (OTPs, promotions, reminders) received before `cutoff`. Returns how many.
+    @discardableResult
+    public func purgeIgnoredMessages(olderThan cutoff: Date) throws -> Int {
+        let ignored = MessageStatus.ignored.rawValue
+        let expired = try modelContext.fetch(
+            FetchDescriptor<RawMessage>(predicate: #Predicate { $0.statusRaw == ignored && $0.receivedAt < cutoff })
+        )
+        guard !expired.isEmpty else { return 0 }
+        for message in expired { modelContext.delete(message) }
+        try saveOrRollback()
+        return expired.count
+    }
+
+    /// When the most recent message from the Shortcuts automation (not the Simulate tab) arrived.
+    public func lastAutomationMessageDate() throws -> Date? {
+        let sms = TransactionSource.sms.rawValue
+        var descriptor = FetchDescriptor<RawMessage>(
+            predicate: #Predicate { $0.sourceRaw == sms },
+            sortBy: [SortDescriptor(\.receivedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first?.receivedAt
     }
 
     public func rawMessageSnapshots() throws -> [RawMessageSnapshot] {

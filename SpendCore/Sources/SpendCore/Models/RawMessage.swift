@@ -13,6 +13,9 @@ public final class RawMessage {
     public var failureReason: String?
     /// SHA-256 (hex) of the trimmed body; used for exact-duplicate detection.
     public var bodyHash: String
+    /// Where the message came from (`sms` from the automation, `simulated` from the Simulate tab).
+    /// Used by the automation health check. Defaulted so existing stores migrate automatically.
+    public var sourceRaw: String = "sms"
     /// Inverse of `Transaction.rawMessage`.
     public var transaction: Transaction?
 
@@ -21,14 +24,21 @@ public final class RawMessage {
         set { statusRaw = newValue.rawValue }
     }
 
+    public var source: TransactionSource {
+        get { TransactionSource(rawValue: sourceRaw) ?? .sms }
+        set { sourceRaw = newValue.rawValue }
+    }
+
     public init(
         id: UUID = UUID(),
         body: String,
         sender: String?,
         receivedAt: Date,
+        source: TransactionSource = .sms,
         status: MessageStatus = .pending,
         parserVersion: Int = ParsingPipeline.version
     ) {
+        self.sourceRaw = source.rawValue
         self.id = id
         self.body = body
         self.sender = sender

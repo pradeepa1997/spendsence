@@ -67,7 +67,9 @@ public actor IngestionService {
         // 1. The raw text must never be lost.
         let rawID: PersistentIdentifier
         do {
-            rawID = try await store.insertRawMessage(body: body, sender: normalizedSender, receivedAt: receivedAt)
+            rawID = try await store.insertRawMessage(
+                body: body, sender: normalizedSender, receivedAt: receivedAt, source: source
+            )
         } catch {
             return IngestionResult(status: .failed, summary: "Failed: could not save message (\(error.localizedDescription))")
         }
@@ -116,6 +118,17 @@ public actor IngestionService {
             try? await store.updateStatus(rawID, status: .failed, reason: reason)
             return IngestionResult(status: .failed, summary: "Failed: \(reason)")
         }
+    }
+
+    /// Ignored messages (OTPs, promotions, reminders) are kept this long for debugging, then deleted.
+    public static let ignoredMessageRetention: TimeInterval = 7 * 86_400
+
+    /// Deletes ignored messages older than `ignoredMessageRetention`. Never throws; returns how many were deleted.
+    @discardableResult
+    public func purgeExpiredIgnoredMessages(now: Date = .now) async -> Int {
+        guard let store else { return 0 }
+        let cutoff = now.addingTimeInterval(-Self.ignoredMessageRetention)
+        return (try? await store.purgeIgnoredMessages(olderThan: cutoff)) ?? 0
     }
 
     /// Dev convenience: wipes transactions, messages and accounts.

@@ -6,6 +6,7 @@ public struct RawMessageSnapshot: Sendable, Equatable {
     public let body: String
     public let sender: String?
     public let receivedAt: Date
+    public let source: TransactionSource
     public let status: MessageStatus
     public let failureReason: String?
     public let parserVersion: Int
@@ -16,6 +17,7 @@ public struct RawMessageSnapshot: Sendable, Equatable {
         body = message.body
         sender = message.sender
         receivedAt = message.receivedAt
+        source = message.source
         status = message.status
         failureReason = message.failureReason
         parserVersion = message.parserVersion
