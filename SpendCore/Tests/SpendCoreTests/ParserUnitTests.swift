@@ -54,7 +54,8 @@ struct ParserUnitTests {
     @Test func senderHintsOrderTemplates() {
         let ordered = TemplateLibrary.bundled.ordered(for: "BankC").map(\.template.id)
         #expect(ordered.first == "generic_pos_txn")
-        #expect(ordered.count == 3)
+        #expect(ordered.count == TemplateLibrary.bundled.templates.count)
+        #expect(TemplateLibrary.bundled.ordered(for: "HNB").prefix(2) == ["hnb_card_alert", "hnb_account"])
     }
 
     @Test(arguments: [

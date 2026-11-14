@@ -77,9 +77,13 @@ public struct TransactionEditor {
     public static let cashAccountName = "Cash"
 
     public let context: ModelContext
+    /// A `ModelContext` doesn't keep its container alive; holding it here means an editor (and its context)
+    /// stays valid however the caller stores the container.
+    private let container: ModelContainer
 
     public init(context: ModelContext) {
         self.context = context
+        self.container = context.container
     }
 
     // MARK: Transactions

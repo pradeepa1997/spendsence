@@ -243,7 +243,8 @@ struct AccountsIntegrationTests {
     }
 
     @Test func cashAccountTracksManualEntries() throws {
-        let (_, _, _, editor) = try setUp()
+        let (container, _, _, editor) = try setUp()
+        defer { withExtendedLifetime(container) {} }
         let lunch = try editor.addManual(TransactionDraft(amount: 450, merchant: "Lunch", occurredAt: t0))
         let cash = try #require(lunch.account)
         #expect(cash.kind == .cash)
