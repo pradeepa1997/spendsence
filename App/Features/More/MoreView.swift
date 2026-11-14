@@ -6,6 +6,11 @@ struct MoreView: View {
         List {
             Section("Organize") {
                 NavigationLink {
+                    AccountsView()
+                } label: {
+                    Label("Accounts & balances", systemImage: "building.columns")
+                }
+                NavigationLink {
                     CategoriesView()
                 } label: {
                     Label("Categories", systemImage: "square.grid.2x2")

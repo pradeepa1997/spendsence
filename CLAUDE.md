@@ -1,7 +1,8 @@
 # CLAUDE.md — SpendSense
 
 iOS expense tracker that ingests bank SMS via a Shortcuts automation → App Intent. Fully on-device.
-Requirements: `PHASE1_SPEC.md` (ingestion), `PHASE2_SPEC.md` (categories, editing, review, dashboard).
+Requirements: `PHASE1_SPEC.md` (ingestion), `PHASE2_SPEC.md` (categories, editing, review, dashboard),
+`PHASE2_5_SPEC.md` (accounts, balances).
 
 ## Commands
 ```bash
@@ -20,6 +21,10 @@ xcodebuild -scheme SpendSense -destination 'generic/platform=iOS Simulator' CODE
 - Categorisation lives in `Categorization/` (`Categorizer` is pure; `CategoryService` touches SwiftData). New keywords
   go in `Categorizer.keywordGroups` with a test in `Phase2Tests`.
 - `TransactionCategory` (not `Category`, which clashes with the Objective-C runtime typedef).
+- Balances: `BalanceCalculator` (pure) over `AccountService.events(for:)`. Account matching (exact → compatible ending
+  → merge alias) lives only in `AccountService.upsert`; dedup uses `Account.matches`.
+- `TransactionStore` creates a fresh `ModelContext` per operation and passes `PersistentIdentifier`s, never models.
+- In `@Query`, use the `filter:`/`sort:` forms; descriptor-based `@Query(...)` didn't compile with this SDK.
 - The RawMessage is persisted **before** parsing; `ingest` never throws.
 - Everything under `SpendCore/Sources/SpendCore/Parsing` is pure, `Sendable`, and has no SwiftData import.
 - Only one `ModelContainer` per process: `SharedStore.containerResult`. The app injects it; `IngestionService.shared` uses it.
@@ -29,9 +34,9 @@ xcodebuild -scheme SpendSense -destination 'generic/platform=iOS Simulator' CODE
 
 ## Layout
 - `App/`: SwiftUI app, App Intents (`App/Intents`), feature views (`App/Features`: Dashboard, Transactions, Review, More,
-  Messages, Simulate, Shared). Tabs: Dashboard · Transactions · Review · More.
+  Accounts, Messages, Simulate, Shared). Tabs: Dashboard · Transactions · Review · More.
 - `SpendCore/Sources/SpendCore/`: `Models`, `Storage`, `Parsing`, `Ingestion`, `Categorization`, `Editing`, `Summary`,
-  `Support`, `Resources/templates.json`.
+  `Accounts`, `Support`, `Resources/templates.json`.
 - `SpendCore/Tests/SpendCoreTests/`: Swift Testing suites + JSON fixture corpus.
 
 ## Spec deviations (agreed)

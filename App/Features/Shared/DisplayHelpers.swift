@@ -159,3 +159,94 @@ extension View {
         modifier(ErrorAlert(message: message))
     }
 }
+
+extension AccountKind {
+    var label: String {
+        switch self {
+        case .bankAccount: "Bank account"
+        case .debitCard: "Debit card"
+        case .creditCard: "Credit card"
+        case .cash: "Cash"
+        case .unknown: "Account"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .bankAccount: "building.columns.fill"
+        case .debitCard: "creditcard"
+        case .creditCard: "creditcard.fill"
+        case .cash: "banknote.fill"
+        case .unknown: "questionmark.square.dashed"
+        }
+    }
+
+    var colorHex: String {
+        switch self {
+        case .bankAccount: "#007AFF"
+        case .debitCard: "#30B0C7"
+        case .creditCard: "#AF52DE"
+        case .cash: "#34C759"
+        case .unknown: "#8E8E93"
+        }
+    }
+
+    /// The kinds a user can pick (unknown is only a starting state).
+    static let editable: [AccountKind] = [.bankAccount, .debitCard, .creditCard, .cash]
+}
+
+enum BalanceText {
+    static let currency = "LKR"
+
+    /// The main figure: balance, or available credit for credit cards.
+    static func primary(_ balance: AccountBalance) -> String {
+        guard let value = balance.value else { return "—" }
+        return AmountFormatter.string(value, currency: currency)
+    }
+
+    /// e.g. "Available credit · as of 14 Nov, 17:46 · estimated (+2)".
+    static func caption(_ balance: AccountBalance) -> String {
+        var parts: [String] = []
+        if balance.kind == .creditCard, balance.value != nil {
+            parts.append("Available credit")
+        }
+        switch balance.source {
+        case .none:
+            parts.append("No balance yet")
+        case .computed:
+            parts.append("From your entries")
+        case .reported:
+            if let asOf = balance.asOf { parts.append("as of \(asOf.formatted(date: .abbreviated, time: .shortened))") }
+        case .manual:
+            if let asOf = balance.asOf { parts.append("set by you \(asOf.formatted(date: .abbreviated, time: .omitted))") }
+        }
+        if balance.pendingCount > 0 {
+            parts.append("estimated (+\(balance.pendingCount))")
+        }
+        return parts.joined(separator: " · ")
+    }
+}
+
+struct AccountIcon: View {
+    let kind: AccountKind
+    var size: CGFloat = 32
+
+    var body: some View {
+        CategoryIconView(symbol: kind.symbol, colorHex: kind.colorHex, size: size)
+    }
+}
+
+/// Parses user-typed amounts: commas allowed, an optional leading minus (overdrafts), empty → nil.
+enum AmountInput {
+    static func parse(_ text: String, allowNegative: Bool = false) -> Decimal? {
+        var trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        var negative = false
+        if allowNegative, trimmed.hasPrefix("-") {
+            negative = true
+            trimmed.removeFirst()
+        }
+        guard let value = AmountParser.parseBalance(trimmed) else { return nil }
+        return negative ? -value : value
+    }
+}

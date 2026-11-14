@@ -4,7 +4,8 @@ An iOS expense tracker that logs bank SMS automatically. iOS doesn't let apps re
 **Shortcuts personal automation** ("Message contains `LKR`") passes each bank SMS to the app's
 **App Intent**. The intent parses the message and saves it on-device without opening the app.
 
-Specs: `PHASE1_SPEC.md` (SMS ingestion) and `PHASE2_SPEC.md` (categories, editing, review queue, dashboard).
+Specs: `PHASE1_SPEC.md` (SMS ingestion), `PHASE2_SPEC.md` (categories, editing, review queue, dashboard) and
+`PHASE2_5_SPEC.md` (accounts and balances).
 
 ## Features
 - **Dashboard:** spent / income / net for any month, a spending-by-category donut, daily bars, top merchants,
@@ -17,6 +18,10 @@ Specs: `PHASE1_SPEC.md` (SMS ingestion) and `PHASE2_SPEC.md` (categories, editin
 - **Categories:** 13 defaults, auto-assigned (your rules → built-in keywords such as KEELLS → Groceries, UBER EATS →
   Dining, DIALOG → Bills → Other; credits → Income). Rename, restyle or add your own under More → Categories.
   Transfers (ATM withdrawals, own-account transfers) aren't counted as spending.
+- **Accounts & balances** (Dashboard card, More → Accounts & balances): accounts and cards are detected from SMS with
+  their type (bank account, debit card, credit card, cash). Balances come from the latest SMS that states one;
+  later transactions without a balance adjust it (shown as *estimated*). Credit cards show available credit and, with
+  a limit, what you owe. Set balance, low-balance alerts, hide, and merge duplicate accounts.
 - **Siri / Shortcuts:** "Log SMS in SpendSense" (the automation action), "Add expense in SpendSense",
   "How much did I spend in SpendSense".
 
@@ -144,6 +149,9 @@ message → ▶︎.
 | `Transaction.categoryName` | Replaced by a `category` relationship (+ `originalMerchant`, `note`, `isReviewed`, `categoryIsManual`) | Phase 2 categories; lightweight migration |
 | Spending total | Debits − refunds, excluding the Transfers category; other currencies counted separately | ATM withdrawals and own-account transfers would double count |
 | Rules on past transactions | Only when the user picks "update past"; transactions whose category was picked by hand keep it | Don't silently overwrite manual choices |
+| Ingest contexts | `TransactionStore` uses a fresh `ModelContext` per operation | A long-lived background context kept stale copies of objects edited in the UI |
+| Credit card "balance" | Stored and shown as available credit; owed = limit − available when a limit is set | Sri Lankan card SMS report available credit, not the outstanding amount |
+| Foreign-currency transactions | Don't adjust LKR balances (a later SMS balance still resets) | No exchange rate on-device |
 | Duplicate summaries etc. | `Logged …`, `Logged for review: …`, `Ignored: …`, `Duplicate: … already logged`, `Failed: …` | |
 
 ## Known limitations (Phase 1)

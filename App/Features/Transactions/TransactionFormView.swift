@@ -89,7 +89,7 @@ struct TransactionFormView: View {
                 if isAdding {
                     Picker("Account", selection: $accountID) {
                         Text(TransactionEditor.cashAccountName).tag(UUID?.none)
-                        ForEach(accounts.filter { $0.bankName != TransactionEditor.cashAccountName }) { account in
+                        ForEach(accounts.filter { $0.kind != .cash && $0.bankName != TransactionEditor.cashAccountName && !$0.isHidden }) { account in
                             Text(account.displayName).tag(Optional(account.id))
                         }
                     }

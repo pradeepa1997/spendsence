@@ -7,6 +7,9 @@ struct DashboardView: View {
     @Query(sort: \SpendCore.Transaction.occurredAt, order: .reverse)
     private var transactions: [SpendCore.Transaction]
 
+    @Query(sort: \Account.displayName)
+    private var accounts: [Account]
+
     @State private var month = SpendingSummary.month(containing: .now)
     @State private var showAdd = false
 
@@ -19,6 +22,16 @@ struct DashboardView: View {
                 LiveAutomationHealthBanner(suppressNeverReceived: transactions.isEmpty)
                 monthPicker
                 TotalsCard(summary: summary)
+
+                let visibleAccounts = accounts.filter { !$0.isHidden }
+                if !visibleAccounts.isEmpty {
+                    NavigationLink {
+                        AccountsView()
+                    } label: {
+                        AccountsCard(accounts: visibleAccounts)
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 if awaitingReview > 0 {
                     NavigationLink {
@@ -148,6 +161,46 @@ private struct TotalsCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(AmountFormatter.string(value, currency: summary.currency))
+                .font(.headline.monospacedDigit())
+                .foregroundStyle(color)
+        }
+    }
+}
+
+private struct AccountsCard: View {
+    let accounts: [Account]
+
+    var body: some View {
+        let balances = accounts.map(\.balance)
+        let overview = AccountsOverview.make(balances)
+        let lowAccounts = accounts.filter { $0.balance.isBelow($0.lowBalanceThreshold) }
+
+        Card {
+            HStack {
+                Text("Accounts").font(.headline)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            HStack(alignment: .top) {
+                figure("In accounts", value: overview.moneyInAccounts, color: .primary)
+                Spacer()
+                figure("Owed on cards", value: overview.owedOnCards, color: overview.owedOnCards > 0 ? .red : .primary)
+            }
+            ForEach(lowAccounts) { account in
+                Label("\(account.displayName) is low: \(BalanceText.primary(account.balance))",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+
+    private func figure(_ title: String, value: Decimal, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(AmountFormatter.string(value, currency: BalanceText.currency))
                 .font(.headline.monospacedDigit())
                 .foregroundStyle(color)
         }
