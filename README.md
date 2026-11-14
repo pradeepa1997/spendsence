@@ -130,12 +130,12 @@ digits (HNB, People's Bank) are matched to the same account as a longer ending, 
 6. Send an OTP-style message (`Your OTP is 123456. Do not share it.`). It should appear in Messages
    as *Ignored* (More → Messages) and not in Transactions.
 7. Send the same message twice. The second should be marked *Duplicate*.
-9. **Phase 3:** set a budget below what you've spent and send a test SMS: you should get the logged notification and
-   a budget alert. Try *Not an expense* on a notification. Add the Spending and Lock Screen widgets and check they
-   update after an SMS. Reinstall (or More → Settings → Show the setup guide again) to walk through onboarding.
 8. **Phase 2:** edit a transaction's merchant or category and choose *Remember…*; send a similar SMS and check the
    rule is applied. Add a cash expense with **+** and with Siri ("Add expense in SpendSense"). Check the Dashboard
    totals and the Review tab badge.
+9. **Phase 3:** set a budget below what you've spent and send a test SMS: you should get the logged notification and
+   a budget alert. Try *Not an expense* on a notification. Add the Spending and Lock Screen widgets and check they
+   update after an SMS. Reinstall (or More → Settings → Show the setup guide again) to walk through onboarding.
 
 You can also run the intent by hand: Shortcuts → new shortcut → *Log Transaction from SMS* → type a
 message → ▶︎.
