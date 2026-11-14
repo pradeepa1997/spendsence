@@ -140,6 +140,20 @@ digits (HNB, People's Bank) are matched to the same account as a longer ending, 
 You can also run the intent by hand: Shortcuts → new shortcut → *Log Transaction from SMS* → type a
 message → ▶︎.
 
+## Releasing to TestFlight
+Ready in the repo: app icon (`App/Assets.xcassets`), privacy manifest (`App/PrivacyInfo.xcprivacy`, no data collected),
+`ITSAppUsesNonExemptEncryption = NO`.
+
+1. Paid Apple Developer Program membership; in App Store Connect create the app with bundle ID
+   `com.pradeepa.spendsense` (register it plus `com.pradeepa.spendsense.widgets` and the App Group first if Xcode
+   hasn't already).
+2. Bump `CURRENT_PROJECT_VERSION` in `project.yml` for every upload (and `MARKETING_VERSION` for a new version),
+   then `xcodegen generate`.
+3. Xcode → destination **Any iOS Device (arm64)** → **Product → Archive** → Organizer → **Distribute App** →
+   **App Store Connect** → Upload.
+4. App Store Connect → TestFlight: add yourself as an internal tester (no review), or create an external group
+   (needs Beta App Review; explain the Shortcuts automation in the review notes).
+
 ## Design decisions & deviations from the spec
 | Topic | Decision | Why |
 |---|---|---|
