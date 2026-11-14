@@ -39,6 +39,11 @@ public struct TransactionSnapshot: Sendable, Equatable {
     public let last4: String?
     public let accountDisplayName: String?
     public let rawMessageID: UUID?
+    public let originalMerchant: String?
+    public let categoryName: String?
+    public let categorySystemKey: String?
+    public let isReviewed: Bool
+    public let note: String?
 
     init(_ transaction: Transaction) {
         id = transaction.id
@@ -54,5 +59,27 @@ public struct TransactionSnapshot: Sendable, Equatable {
         last4 = transaction.account?.last4
         accountDisplayName = transaction.account?.displayName
         rawMessageID = transaction.rawMessage?.id
+        originalMerchant = transaction.originalMerchant
+        categoryName = transaction.category?.name
+        categorySystemKey = transaction.category?.systemKey
+        isReviewed = transaction.isReviewed
+        note = transaction.note
+    }
+}
+
+extension TransactionFact {
+    public init(_ transaction: Transaction) {
+        self.init(
+            amount: transaction.amount,
+            currency: transaction.currency,
+            type: transaction.type,
+            occurredAt: transaction.occurredAt,
+            merchant: transaction.merchant,
+            categoryID: transaction.category?.id,
+            categoryName: transaction.category?.name ?? "Uncategorized",
+            categorySymbol: transaction.category?.symbol ?? "questionmark",
+            categoryColorHex: transaction.category?.colorHex ?? "#8E8E93",
+            excludedFromSpending: transaction.category?.excludedFromSpending ?? false
+        )
     }
 }

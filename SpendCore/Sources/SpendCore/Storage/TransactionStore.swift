@@ -160,6 +160,14 @@ public actor TransactionStore {
         modelContext.insert(transaction)
         transaction.account = account
         transaction.rawMessage = raw
+
+        // Merchant rules (rename + category), then built-in keywords.
+        let resolution = try CategoryService.resolve(merchant: parsed.merchant, type: parsed.type, in: modelContext)
+        transaction.category = resolution.category
+        if let renamed = resolution.renamedMerchant {
+            transaction.merchant = renamed
+        }
+        resolution.rule?.hitCount += 1
         raw.status = status
         raw.failureReason = reason
         raw.parserVersion = ParsingPipeline.version
@@ -196,10 +204,37 @@ public actor TransactionStore {
     // MARK: Maintenance & diagnostics
 
     public func deleteAll() throws {
-        for transaction in try modelContext.fetch(FetchDescriptor<Transaction>()) { modelContext.delete(transaction) }
-        for raw in try modelContext.fetch(FetchDescriptor<RawMessage>()) { modelContext.delete(raw) }
-        for account in try modelContext.fetch(FetchDescriptor<Account>()) { modelContext.delete(account) }
+        try TransactionEditor(context: modelContext).deleteAllData()
+    }
+
+    /// Seeds default categories and categorises anything uncategorised. Returns how many were back-filled.
+    @discardableResult
+    public func prepare() throws -> Int {
+        try CategoryService.ensureDefaultCategories(in: modelContext)
+        let backfilled = try CategoryService.backfillUncategorized(in: modelContext)
         try saveOrRollback()
+        return backfilled
+    }
+
+    /// Manual entry (Siri / Shortcuts). Same logic the app uses on its main context.
+    public func addManual(_ draft: TransactionDraft) throws -> TransactionSnapshot {
+        TransactionSnapshot(try TransactionEditor(context: modelContext).addManual(draft))
+    }
+
+    public func facts(in interval: DateInterval) throws -> [TransactionFact] {
+        let start = interval.start
+        let end = interval.end
+        return try modelContext.fetch(
+            FetchDescriptor<Transaction>(predicate: #Predicate { $0.occurredAt >= start && $0.occurredAt < end })
+        ).map { TransactionFact($0) }
+    }
+
+    public func categoryNames() throws -> [String] {
+        try modelContext.fetch(FetchDescriptor<TransactionCategory>(sortBy: [SortDescriptor(\.sortOrder)])).map(\.name)
+    }
+
+    public func ruleCount() throws -> Int {
+        try modelContext.fetchCount(FetchDescriptor<MerchantRule>())
     }
 
     /// Deletes ignored messages (OTPs, promotions, reminders) received before `cutoff`. Returns how many.

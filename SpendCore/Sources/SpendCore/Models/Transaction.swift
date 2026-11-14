@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// A parsed money movement. `amount` is always positive; direction comes from `type`.
+/// A money movement. `amount` is always positive; direction comes from `type`.
 ///
 /// Note: SwiftUI also declares a `Transaction` type. In files that import both SwiftUI and SpendCore,
 /// refer to this one as `SpendCore.Transaction`.
@@ -11,14 +11,22 @@ public final class Transaction {
     public var amount: Decimal
     public var currency: String
     public var typeRaw: String
+    /// Display name (may have been renamed by the user or a merchant rule).
     public var merchant: String?
+    /// The merchant exactly as parsed from the SMS. Merchant rules match on this.
+    public var originalMerchant: String?
     public var occurredAt: Date
     public var balanceAfter: Decimal?
     public var confidence: Double
     public var sourceRaw: String
-    /// Phase 1 placeholder; replaced by a Category model later.
-    public var categoryName: String?
+    /// Inverse of `TransactionCategory.transactions`.
+    public var category: TransactionCategory?
+    /// The user picked this category for this transaction; rules applied to past transactions leave it alone.
+    public var categoryIsManual: Bool = false
+    public var note: String?
     public var isUserEdited: Bool
+    /// The user approved or edited this transaction, so it no longer shows in the review queue.
+    public var isReviewed: Bool = false
     public var createdAt: Date
     public var account: Account?
     @Relationship(deleteRule: .nullify, inverse: \RawMessage.transaction)
@@ -39,6 +47,11 @@ public final class Transaction {
         confidence < ParsingPipeline.autoAcceptThreshold - 1e-9
     }
 
+    /// Low confidence and not yet approved or edited by the user.
+    public var isAwaitingReview: Bool {
+        needsReview && !isReviewed
+    }
+
     public init(
         id: UUID = UUID(),
         amount: Decimal,
@@ -49,7 +62,7 @@ public final class Transaction {
         balanceAfter: Decimal? = nil,
         confidence: Double,
         source: TransactionSource,
-        categoryName: String? = nil,
+        note: String? = nil,
         isUserEdited: Bool = false,
         createdAt: Date = .now
     ) {
@@ -58,11 +71,12 @@ public final class Transaction {
         self.currency = currency
         self.typeRaw = type.rawValue
         self.merchant = merchant
+        self.originalMerchant = merchant
         self.occurredAt = occurredAt
         self.balanceAfter = balanceAfter
         self.confidence = confidence
         self.sourceRaw = source.rawValue
-        self.categoryName = categoryName
+        self.note = note
         self.isUserEdited = isUserEdited
         self.createdAt = createdAt
     }

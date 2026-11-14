@@ -3,7 +3,7 @@ import SwiftData
 
 public enum StoreFactory {
     public static var schema: Schema {
-        Schema([RawMessage.self, Transaction.self, Account.self])
+        Schema([RawMessage.self, Transaction.self, Account.self, TransactionCategory.self, MerchantRule.self])
     }
 
     /// Creates the SwiftData container.

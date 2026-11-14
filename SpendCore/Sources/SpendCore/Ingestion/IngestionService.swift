@@ -131,7 +131,46 @@ public actor IngestionService {
         return (try? await store.purgeIgnoredMessages(olderThan: cutoff)) ?? 0
     }
 
-    /// Dev convenience: wipes transactions, messages and accounts.
+    /// Run when the app becomes active: seeds default categories, categorises anything uncategorised and purges
+    /// expired ignored messages. Never throws.
+    public func prepare(now: Date = .now) async {
+        guard let store else { return }
+        _ = try? await store.prepare()
+        await purgeExpiredIgnoredMessages(now: now)
+    }
+
+    /// Manual / cash expense (Siri, Shortcuts). Returns a human-readable summary.
+    public func addExpense(
+        amount: Decimal,
+        merchant: String?,
+        categoryName: String?,
+        type: TransactionType = .debit,
+        occurredAt: Date = .now
+    ) async -> String {
+        guard let store else { return "Failed: storage unavailable (\(storeError ?? "unknown error"))" }
+        let draft = TransactionDraft(
+            amount: amount, type: type, merchant: merchant, categoryName: categoryName, occurredAt: occurredAt
+        )
+        do {
+            let saved = try await store.addManual(draft)
+            var summary = "Added \(AmountFormatter.string(saved.amount, currency: saved.currency))"
+            if let merchant = saved.merchant { summary += " – \(merchant)" }
+            if let category = saved.categoryName { summary += " (\(category))" }
+            return summary
+        } catch {
+            return "Failed: \(error.localizedDescription)"
+        }
+    }
+
+    /// Totals for the month containing `date`, or nil if the store is unavailable.
+    public func monthlySummary(containing date: Date = .now) async -> SpendingSummary? {
+        guard let store else { return nil }
+        let interval = SpendingSummary.month(containing: date)
+        guard let facts = try? await store.facts(in: interval) else { return nil }
+        return SpendingSummary.make(facts: facts, interval: interval)
+    }
+
+    /// Dev convenience: wipes transactions, messages, accounts, rules and categories (defaults are re-seeded).
     public func deleteAllData() async throws {
         guard let store else { return }
         try await store.deleteAll()
