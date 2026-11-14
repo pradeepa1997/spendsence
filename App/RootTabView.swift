@@ -5,7 +5,8 @@ import SwiftUI
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
 
-    @Query(QueryDescriptors.awaitingReview)
+    /// Low confidence (below `ParsingPipeline.autoAcceptThreshold`, 0.75) and not yet approved or edited.
+    @Query(filter: #Predicate<SpendCore.Transaction> { $0.confidence < 0.75 && $0.isReviewed == false })
     private var awaitingReview: [SpendCore.Transaction]
 
     @Query(filter: #Predicate<RawMessage> { $0.statusRaw == "needsReview" })

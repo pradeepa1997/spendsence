@@ -39,11 +39,16 @@ struct LiveAutomationHealthBanner: View {
     /// Hide the "never received" state, e.g. when an empty-state view already explains the setup.
     var suppressNeverReceived = false
 
-    @Query(QueryDescriptors.latestAutomationMessage)
-    private var latest: [RawMessage]
+    /// Messages delivered by the Shortcuts automation, newest first (Simulate-tab messages have source "simulated").
+    @Query(
+        filter: #Predicate<RawMessage> { $0.sourceRaw == "sms" },
+        sort: \RawMessage.receivedAt,
+        order: .reverse
+    )
+    private var automationMessages: [RawMessage]
 
     var body: some View {
-        let health = AutomationHealth.evaluate(lastSMSAt: latest.first?.receivedAt)
+        let health = AutomationHealth.evaluate(lastSMSAt: automationMessages.first?.receivedAt)
         AutomationHealthBanner(health: suppressNeverReceived && health == .neverReceived ? .healthy : health)
     }
 }
