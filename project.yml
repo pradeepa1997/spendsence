@@ -28,10 +28,15 @@ targets:
     dependencies:
       - package: SpendCore
         product: SpendCore
+      - target: SpendSenseWidgets
     info:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: SpendSense
+        CFBundleURLTypes:
+          - CFBundleURLName: com.pradeepa.spendsense
+            CFBundleURLSchemes:
+              - spendsense
         UILaunchScreen: {}
         UIApplicationSupportsIndirectInputEvents: true
         UISupportedInterfaceOrientations:
@@ -47,6 +52,36 @@ targets:
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: "1"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+  SpendSenseWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Widgets
+    dependencies:
+      - package: SpendCore
+        product: SpendCore
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: SpendSense
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widgets/SpendSenseWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.pradeepa.spendsense
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pradeepa.spendsense.widgets
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        SKIP_INSTALL: YES
 
 schemes:
   SpendSense:
