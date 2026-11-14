@@ -39,18 +39,8 @@ struct LiveAutomationHealthBanner: View {
     /// Hide the "never received" state, e.g. when an empty-state view already explains the setup.
     var suppressNeverReceived = false
 
-    @Query(LiveAutomationHealthBanner.latestAutomationMessage)
+    @Query(QueryDescriptors.latestAutomationMessage)
     private var latest: [RawMessage]
-
-    nonisolated private static var latestAutomationMessage: FetchDescriptor<RawMessage> {
-        let sms = TransactionSource.sms.rawValue
-        var descriptor = FetchDescriptor<RawMessage>(
-            predicate: #Predicate { $0.sourceRaw == sms },
-            sortBy: [SortDescriptor(\.receivedAt, order: .reverse)]
-        )
-        descriptor.fetchLimit = 1
-        return descriptor
-    }
 
     var body: some View {
         let health = AutomationHealth.evaluate(lastSMSAt: latest.first?.receivedAt)

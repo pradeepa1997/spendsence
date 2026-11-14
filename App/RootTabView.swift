@@ -5,18 +5,11 @@ import SwiftUI
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
 
-    @Query(RootTabView.awaitingReview)
+    @Query(QueryDescriptors.awaitingReview)
     private var awaitingReview: [SpendCore.Transaction]
 
     @Query(filter: #Predicate<RawMessage> { $0.statusRaw == "needsReview" })
     private var reviewMessages: [RawMessage]
-
-    nonisolated private static var awaitingReview: FetchDescriptor<SpendCore.Transaction> {
-        let threshold = ParsingPipeline.autoAcceptThreshold - 1e-9
-        return FetchDescriptor<SpendCore.Transaction>(
-            predicate: #Predicate { $0.confidence < threshold && $0.isReviewed == false }
-        )
-    }
 
     private var reviewCount: Int {
         awaitingReview.count + reviewMessages.filter { $0.transaction == nil }.count
