@@ -20,6 +20,9 @@ struct LogTransactionFromSMSIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         // The single ingestion path. It never throws, persists the raw SMS first, and touches no UI.
         let result = await IngestionService.shared.ingest(body: message, sender: sender)
+        await NotificationService.notifyLogged(result)
+        await NotificationService.checkBudgets()
+        await WidgetReloader.reload()
         return .result(value: result.summary, dialog: "\(result.summary)")
     }
 }

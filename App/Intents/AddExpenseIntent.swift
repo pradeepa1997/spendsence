@@ -28,6 +28,8 @@ struct AddExpenseIntent: AppIntent {
             return .result(value: message, dialog: "\(message)")
         }
         let summary = await IngestionService.shared.addExpense(amount: value, merchant: merchant, categoryName: category)
+        await NotificationService.checkBudgets()
+        await WidgetReloader.reload()
         return .result(value: summary, dialog: "\(summary)")
     }
 }

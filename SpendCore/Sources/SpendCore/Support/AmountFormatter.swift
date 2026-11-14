@@ -12,7 +12,7 @@ public enum AmountFormatter {
         return "\(currency) \(number)"
     }
 
-    /// Short form for widgets: `LKR 950`, `LKR 45.3K`, `LKR 1.25M`.
+    /// Short form for widgets: `LKR 950`, `LKR 45.3K`, `LKR 1.25M` (no currency → `45.3K`).
     public static func compact(_ amount: Decimal, currency: String) -> String {
         let value = NSDecimalNumber(decimal: amount).doubleValue
         let magnitude = abs(value)
@@ -30,6 +30,6 @@ public enum AmountFormatter {
             formatter.maximumFractionDigits = 0
             number = formatter.string(from: NSNumber(value: value.rounded())) ?? ""
         }
-        return "\(currency) \(number)"
+        return currency.isEmpty ? number : "\(currency) \(number)"
     }
 }

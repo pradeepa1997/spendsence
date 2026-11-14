@@ -224,6 +224,17 @@ public actor TransactionStore {
         return try makeContext().fetch(descriptor).first?.receivedAt
     }
 
+    /// The newest message delivered by the Shortcuts automation (onboarding's verify step polls this).
+    public func latestAutomationMessage() throws -> RawMessageSnapshot? {
+        let sms = TransactionSource.sms.rawValue
+        var descriptor = FetchDescriptor<RawMessage>(
+            predicate: #Predicate { $0.sourceRaw == sms },
+            sortBy: [SortDescriptor(\.receivedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        return try makeContext().fetch(descriptor).first.map(RawMessageSnapshot.init)
+    }
+
     public func rawMessageSnapshots() throws -> [RawMessageSnapshot] {
         try makeContext().fetch(FetchDescriptor<RawMessage>(sortBy: [SortDescriptor(\.receivedAt)]))
             .map(RawMessageSnapshot.init)

@@ -111,6 +111,10 @@ struct CompactAmountTests {
         let amount = Decimal(string: input, locale: Locale(identifier: "en_US_POSIX")) ?? 0
         #expect(AmountFormatter.compact(amount, currency: "LKR") == expected)
     }
+
+    @Test func withoutCurrency() {
+        #expect(AmountFormatter.compact(45_320, currency: "") == "45.3K")
+    }
 }
 
 @Suite("Phase 3 store")

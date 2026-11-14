@@ -11,6 +11,11 @@ struct MoreView: View {
                     Label("Accounts & balances", systemImage: "building.columns")
                 }
                 NavigationLink {
+                    BudgetsView()
+                } label: {
+                    Label("Budgets", systemImage: "gauge.with.dots.needle.33percent")
+                }
+                NavigationLink {
                     CategoriesView()
                 } label: {
                     Label("Categories", systemImage: "square.grid.2x2")
@@ -19,6 +24,14 @@ struct MoreView: View {
                     MerchantRulesView()
                 } label: {
                     Label("Merchant rules", systemImage: "wand.and.stars")
+                }
+            }
+
+            Section {
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
                 }
             }
 

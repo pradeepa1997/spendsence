@@ -10,6 +10,9 @@ struct DashboardView: View {
     @Query(sort: \Account.displayName)
     private var accounts: [Account]
 
+    @Query(sort: \TransactionCategory.sortOrder)
+    private var categories: [TransactionCategory]
+
     @State private var month = SpendingSummary.month(containing: .now)
     @State private var showAdd = false
 
@@ -22,6 +25,16 @@ struct DashboardView: View {
                 LiveAutomationHealthBanner(suppressNeverReceived: transactions.isEmpty)
                 monthPicker
                 TotalsCard(summary: summary)
+
+                let budgets = BudgetCalculator.statuses(summary: summary, budgets: BudgetsView.inputs(from: categories))
+                if !budgets.isEmpty {
+                    NavigationLink {
+                        BudgetsView()
+                    } label: {
+                        BudgetsCard(statuses: budgets)
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 let visibleAccounts = accounts.filter { !$0.isHidden }
                 if !visibleAccounts.isEmpty {
@@ -203,6 +216,28 @@ private struct AccountsCard: View {
             Text(AmountFormatter.string(value, currency: BalanceText.currency))
                 .font(.headline.monospacedDigit())
                 .foregroundStyle(color)
+        }
+    }
+}
+
+private struct BudgetsCard: View {
+    let statuses: [BudgetStatus]
+
+    var body: some View {
+        Card {
+            HStack {
+                Text("Budgets").font(.headline)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            ForEach(statuses.prefix(4)) { status in
+                BudgetRow(status: status)
+            }
+            if statuses.count > 4 {
+                Text("+\(statuses.count - 4) more")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

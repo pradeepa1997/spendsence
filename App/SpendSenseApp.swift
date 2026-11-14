@@ -4,6 +4,8 @@ import SpendCore
 
 @main
 struct SpendSenseApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
         WindowGroup {
             // One container per process: the same one IngestionService.shared (App Intent, Simulate tab) uses.

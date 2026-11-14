@@ -168,6 +168,11 @@ public actor IngestionService {
         return try? await store.dashboardSnapshot(now: now)
     }
 
+    public func latestAutomationMessage() async -> RawMessageSnapshot? {
+        guard let store else { return nil }
+        return try? await store.latestAutomationMessage()
+    }
+
     public func transaction(id: UUID) async -> TransactionSnapshot? {
         guard let store else { return nil }
         return try? await store.transactionSnapshot(id: id)

@@ -163,9 +163,11 @@ struct TransactionFormView: View {
             switch mode {
             case .add(let raw):
                 try editor.addManual(draft, linking: raw)
+                AppEvents.dataChanged()
                 dismiss()
             case .edit(let transaction):
                 let outcome = try editor.update(transaction, with: draft)
+                AppEvents.dataChanged()
                 if outcome.canRemember {
                     pendingRule = outcome
                     showRememberDialog = true
