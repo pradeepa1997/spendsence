@@ -16,7 +16,8 @@ enum DateParsing {
         formatter.calendar = calendar
         formatter.timeZone = timeZone
         formatter.dateFormat = format
-        guard let parsed = formatter.date(from: string) else { return receivedAt }
+        let input = format.contains("MMM") ? capitalizeWords(string) : string
+        guard let parsed = formatter.date(from: input) else { return receivedAt }
 
         var result = parsed
         if !format.contains("H"), !format.contains("h") {
@@ -29,6 +30,18 @@ enum DateParsing {
         let earliest = receivedAt.addingTimeInterval(-400 * 86_400)
         let latest = receivedAt.addingTimeInterval(86_400)
         guard result >= earliest, result <= latest else { return receivedAt }
+        return result
+    }
+
+    private static let monthWord = CompiledRegex("[A-Za-z]{3,}")
+
+    /// `14/NOV/2026` → `14/Nov/2026`, so month names parse whatever case the bank uses. AM/PM is left alone.
+    static func capitalizeWords(_ string: String) -> String {
+        var result = string
+        for match in monthWord.matches(in: string).reversed() {
+            guard let range = Range(match.range, in: result) else { continue }
+            result.replaceSubrange(range, with: String(result[range]).capitalized)
+        }
         return result
     }
 }

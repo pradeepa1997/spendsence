@@ -4,7 +4,8 @@ import Foundation
 /// Pure and SwiftData-free; dedup and saving happen in `IngestionService`.
 public struct ParsingPipeline: Sendable {
     /// Bump whenever parsing output for an existing message would change.
-    public static let version = 1
+    /// v2: real Sri Lankan bank templates, amount-after-currency detection, card descriptor cleanup.
+    public static let version = 2
     /// Transactions at or above this confidence are auto-accepted; below it they are saved as needsReview.
     public static let autoAcceptThreshold = 0.75
 

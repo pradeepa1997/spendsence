@@ -27,8 +27,14 @@ public struct TemplateParser: Sendable {
             let last4 = group("last4").flatMap(Self.lastFourDigits)
             let balance = group("balance").flatMap(AmountParser.parseBalance)
             var occurredAt: Date?
-            if let dateText = group("date"), let format = compiled.template.dateFormat {
-                occurredAt = DateParsing.parse(dateText, format: format, receivedAt: receivedAt)
+            if let dateText = group("date"), let dateFormat = compiled.template.dateFormat {
+                if let timeText = group("time"), let timeFormat = compiled.template.timeFormat {
+                    occurredAt = DateParsing.parse(
+                        "\(dateText) \(timeText)", format: "\(dateFormat) \(timeFormat)", receivedAt: receivedAt
+                    )
+                } else {
+                    occurredAt = DateParsing.parse(dateText, format: dateFormat, receivedAt: receivedAt)
+                }
             }
 
             // Confidence in integer points to avoid floating-point drift at the 0.75 threshold.
@@ -58,8 +64,10 @@ public struct TemplateParser: Sendable {
         return .debit
     }
 
+    /// Up to the last 4 digits. Some banks show only 2 (`11202XXXXX95`), which is still enough to tell
+    /// accounts apart; see `IngestionRules.sameAccount`.
     static func lastFourDigits(_ raw: String) -> String? {
         let digits = raw.filter { $0 >= "0" && $0 <= "9" }
-        return digits.count >= 4 ? String(digits.suffix(4)) : nil
+        return digits.count >= 2 ? String(digits.suffix(4)) : nil
     }
 }

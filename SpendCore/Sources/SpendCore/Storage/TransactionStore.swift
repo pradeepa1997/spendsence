@@ -23,6 +23,22 @@ enum IngestionRules {
         return "Unknown Bank"
     }
 
+    /// Whether two account endings refer to the same account. Some banks mask all but the last 2 digits
+    /// (HNB `11202XXXXX95`) while their card alerts show 4 (`1120***7795`), so a 2–3 digit ending matches a
+    /// longer one that ends with it. Both nil also matches (the "<bank> (unknown)" account).
+    static func sameAccount(_ a: String?, _ b: String?) -> Bool {
+        switch (a, b) {
+        case (nil, nil):
+            return true
+        case let (a?, b?):
+            if a == b { return true }
+            let (shorter, longer) = a.count <= b.count ? (a, b) : (b, a)
+            return shorter.count >= 2 && longer.hasSuffix(shorter)
+        default:
+            return false
+        }
+    }
+
     /// Statuses whose body hash blocks an identical later message.
     static func blocksIdenticalBody(_ status: MessageStatus) -> Bool {
         switch status {
@@ -109,7 +125,7 @@ public actor TransactionStore {
             existing.amount == parsed.amount
                 && existing.currency == parsed.currency
                 && existing.account?.bankName == bank
-                && existing.account?.last4 == parsed.last4
+                && existing.account.map { IngestionRules.sameAccount($0.last4, parsed.last4) } == true
         }
     }
 
@@ -147,6 +163,7 @@ public actor TransactionStore {
     }
 
     /// Matches on (bankName, last4); a nil last4 maps to a single "<bank> (unknown)" account.
+    /// A short ending (`95`) matches a longer one (`7795`); the account keeps the longest ending seen.
     /// Does not save; callers save as part of their own unit of work.
     public func upsertAccount(bankName: String, last4: String?) throws -> Account {
         let candidates = try modelContext.fetch(
@@ -154,6 +171,17 @@ public actor TransactionStore {
         )
         if let existing = candidates.first(where: { $0.last4 == last4 }) {
             return existing
+        }
+        if let compatible = candidates.first(where: { IngestionRules.sameAccount($0.last4, last4) }) {
+            if let last4, last4.count > (compatible.last4?.count ?? 0) {
+                let hadDefaultName = compatible.displayName
+                    == Account.defaultDisplayName(bankName: compatible.bankName, last4: compatible.last4)
+                compatible.last4 = last4
+                if hadDefaultName {
+                    compatible.displayName = Account.defaultDisplayName(bankName: compatible.bankName, last4: last4)
+                }
+            }
+            return compatible
         }
         let account = Account(bankName: bankName, last4: last4)
         modelContext.insert(account)

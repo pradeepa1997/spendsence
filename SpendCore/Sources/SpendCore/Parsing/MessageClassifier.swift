@@ -80,10 +80,11 @@ public struct ClassifierKeywords: Sendable {
 public struct MessageClassifier: Sendable {
     public static let standard = MessageClassifier()
 
-    /// A currency code followed by a number.
-    static let amountPattern = CompiledRegex(
-        #"(?<![A-Za-z])(?:"# + Normalizer.currencyCodes.joined(separator: "|") + #")\s?\d"#
-    )
+    /// A currency code followed by a number (`LKR 100`) or a number followed by a code (`570.47 LKR`, HNB).
+    static let amountPattern: CompiledRegex = {
+        let codes = Normalizer.currencyCodes.joined(separator: "|")
+        return CompiledRegex(#"(?<![A-Za-z])(?:"# + codes + #")\s?\d|\d\s?(?:"# + codes + #")(?![A-Za-z])"#)
+    }()
 
     private struct Rewrite: Sendable {
         let regex: CompiledRegex

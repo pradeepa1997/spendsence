@@ -1,29 +1,182 @@
 [
   {
+    "id": "hnb_card_alert",
+    "bankName": "HNB",
+    "senderHints": [
+      "HNB"
+    ],
+    "pattern": "SMS ALERT:[^,]*, ?Account:[\\dXx*]*?(?<last4>\\d{4}), ?Location:(?<merchant>.+?)(?:, ?[A-Z]{2})?, ?Amount(?:\\(Approx\\.\\))?: ?(?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) ?(?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD)(?:, ?Av\\.? ?Bal: ?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?) ?[A-Z]{3})?(?:, ?Date: ?(?<date>\\d{2}\\.\\d{2}\\.\\d{2}))?(?:, ?Time: ?(?<time>\\d{2}:\\d{2}))?",
+    "debitKeywords": [],
+    "creditKeywords": [
+      "reversal",
+      "reversed",
+      "refund"
+    ],
+    "dateFormat": "dd.MM.yy",
+    "timeFormat": "HH:mm"
+  },
+  {
+    "id": "hnb_account",
+    "bankName": "HNB",
+    "senderHints": [
+      "HNB"
+    ],
+    "pattern": "(?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) (?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) (?:credited|debited) (?:to|from) Ac No: ?[\\dXx*]*?(?<last4>\\d{2,4}) on (?<date>\\d{2}/\\d{2}/\\d{2}) (?<time>\\d{2}:\\d{2}:\\d{2})(?: Reason: ?(?<merchant>.+?)(?= Bal:| Protect|$))?(?: Bal: ?(?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": [
+      "debited"
+    ],
+    "creditKeywords": [
+      "credited"
+    ],
+    "dateFormat": "dd/MM/yy",
+    "timeFormat": "HH:mm:ss"
+  },
+  {
+    "id": "dfcc_card",
+    "bankName": "DFCC",
+    "senderHints": [
+      "DFCC"
+    ],
+    "pattern": "CR CARD: (?<merchant>.+?) CARD ?[x*]*(?<last4>\\d{4}) (?:DEBITED|CREDITED|REVERSED) (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) ?(?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) ON \\((?<date>\\d{2}/[A-Za-z]{3}/\\d{4}) (?<time>\\d{2}:\\d{2})\\)(?: AUTHCODE \\w+)?(?: AVBAL (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": [
+      "debited"
+    ],
+    "creditKeywords": [
+      "credited",
+      "reversed"
+    ],
+    "dateFormat": "dd/MMM/yyyy",
+    "timeFormat": "HH:mm"
+  },
+  {
+    "id": "dfcc_account",
+    "bankName": "DFCC",
+    "senderHints": [
+      "DFCC"
+    ],
+    "pattern": "A/C No: ?[\\dXx*]*?(?<last4>\\d{4}) is (?:debited|credited) with (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) ?(?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) on (?<date>\\d{1,2} [A-Za-z]{3} \\d{4})(?: ref: ?(?<merchant>.+?)\\.(?= |$))?(?: Your bal is (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": [
+      "debited"
+    ],
+    "creditKeywords": [
+      "credited"
+    ],
+    "dateFormat": "d MMM yyyy",
+    "timeFormat": null
+  },
+  {
+    "id": "ndb_card",
+    "bankName": "NDB",
+    "senderHints": [
+      "NDB"
+    ],
+    "pattern": "Card [\\dXx*]*?(?<last4>\\d{4}) (?:Debited|Credited|Reversed) (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) ?(?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) (?<merchant>.+?) (?<date>\\d{4}-\\d{2}-\\d{2}) (?<time>\\d{2}:\\d{2}:\\d{2})(?: Avl Bal (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": [
+      "debited"
+    ],
+    "creditKeywords": [
+      "credited",
+      "reversed"
+    ],
+    "dateFormat": "yyyy-MM-dd",
+    "timeFormat": "HH:mm:ss"
+  },
+  {
+    "id": "seylan_account",
+    "bankName": "Seylan",
+    "senderHints": [
+      "SEYLAN"
+    ],
+    "pattern": "Account [\\dXx*]*?(?<last4>\\d{4}) was (?:credited|debited) by (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) ?(?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?)(?: (?<merchant>.+?))? on (?<date>\\d{2}/\\d{2}/\\d{4}) (?<time>\\d{1,2}:\\d{2}:\\d{2} ?[AP]M)(?:\\.? Avl bal (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": [
+      "debited"
+    ],
+    "creditKeywords": [
+      "credited"
+    ],
+    "dateFormat": "dd/MM/yyyy",
+    "timeFormat": "hh:mm:ss a"
+  },
+  {
+    "id": "seylan_card",
+    "bankName": "Seylan",
+    "senderHints": [
+      "SEYLAN"
+    ],
+    "pattern": "Card \\.*(?<last4>\\d{4}) (?:debit|credit|reversal|refund) Txn \\w+ of (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) ?(?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) done on (?<date>\\d{2}/\\d{2}/\\d{4}) (?<time>\\d{1,2}:\\d{2}:\\d{2} ?[AP]M)(?: at (?<merchant>.+?))?(?:\\.(?= |$)(?: Avl bal (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?|$)",
+    "debitKeywords": [
+      "debit"
+    ],
+    "creditKeywords": [
+      "credit",
+      "reversal",
+      "refund"
+    ],
+    "dateFormat": "dd/MM/yyyy",
+    "timeFormat": "hh:mm:ss a"
+  },
+  {
+    "id": "peoples_account",
+    "bankName": "People's Bank",
+    "senderHints": [
+      "PEOPLES",
+      "PEOPLE'S"
+    ],
+    "pattern": "A/C [\\d\\-Xx*]*?(?<last4>\\d{2,4}) has been (?:debited|credited) by (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) ?(?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?)(?: \\((?<merchant>.+?) @ ?(?<time>\\d{1,2}:\\d{2}) (?<date>\\d{2}/\\d{2}/\\d{4})\\))?(?:.*?Av_Bal: ?(?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
+    "debitKeywords": [
+      "debited"
+    ],
+    "creditKeywords": [
+      "credited"
+    ],
+    "dateFormat": "dd/MM/yyyy",
+    "timeFormat": "H:mm"
+  },
+  {
     "id": "generic_card_purchase",
     "bankName": "Bank A",
-    "senderHints": ["BANKA"],
+    "senderHints": [
+      "BANKA"
+    ],
     "pattern": "(?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) (?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) debited from (?:your )?card ending (?:in )?(?<last4>\\d{4}) at (?<merchant>.+?) on (?<date>\\d{2}/\\d{2}/\\d{2})(?:\\.? ?Avl\\.? Bal:? (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
-    "debitKeywords": ["debited"],
+    "debitKeywords": [
+      "debited"
+    ],
     "creditKeywords": [],
-    "dateFormat": "dd/MM/yy"
+    "dateFormat": "dd/MM/yy",
+    "timeFormat": null
   },
   {
     "id": "generic_account_credit",
     "bankName": "Bank B",
-    "senderHints": ["BANKB"],
+    "senderHints": [
+      "BANKB"
+    ],
     "pattern": "A/C (?:No\\.? )?[x*]*(?<last4>\\d{4}) has been (?:credited|debited) with (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) (?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?)(?: on (?<date>\\d{2}-\\d{2}-\\d{4}))?(?:\\.? ?Bal:? (?:LKR )?(?<balance>\\d[\\d,]*(?:\\.\\d{1,2})?))?",
-    "debitKeywords": ["debited"],
-    "creditKeywords": ["credited"],
-    "dateFormat": "dd-MM-yyyy"
+    "debitKeywords": [
+      "debited"
+    ],
+    "creditKeywords": [
+      "credited"
+    ],
+    "dateFormat": "dd-MM-yyyy",
+    "timeFormat": null
   },
   {
     "id": "generic_pos_txn",
     "bankName": "Bank C",
-    "senderHints": ["BANKC"],
+    "senderHints": [
+      "BANKC"
+    ],
     "pattern": "Txn of (?<currency>LKR|USD|EUR|GBP|INR|AUD|SGD) (?<amount>\\d[\\d,]*(?:\\.\\d{1,2})?) at (?<merchant>.+?) using card [x*]*(?<last4>\\d{4})",
-    "debitKeywords": ["approved", "txn"],
-    "creditKeywords": ["reversed"],
-    "dateFormat": null
+    "debitKeywords": [
+      "approved",
+      "txn"
+    ],
+    "creditKeywords": [
+      "reversed"
+    ],
+    "dateFormat": null,
+    "timeFormat": null
   }
 ]

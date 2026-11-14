@@ -3,162 +3,474 @@
     "id": "card_purchase_01",
     "sender": "BANKA",
     "body": "LKR 2,450.00 debited from card ending 1234 at KEELLS SUPER on 12/09/26. Avl Bal LKR 45,210.50",
-    "expect": { "outcome": "parsed", "amount": "2450.00", "currency": "LKR", "type": "debit", "merchant": "Keells Super", "last4": "1234", "balanceAfter": "45210.50" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "2450.00",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Keells Super",
+      "last4": "1234",
+      "balanceAfter": "45210.50"
+    }
   },
   {
     "id": "card_purchase_rs_no_decimals",
     "sender": "BANKA",
     "body": "Rs.12,000 debited from card ending 4455 at ODEL COLOMBO on 03/09/26.",
-    "expect": { "outcome": "parsed", "amount": "12000", "currency": "LKR", "type": "debit", "merchant": "Odel Colombo", "last4": "4455" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "12000",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Odel Colombo",
+      "last4": "4455"
+    }
   },
   {
     "id": "card_purchase_multiline_million",
     "sender": "BANKA",
     "body": "LKR1,250,000.00 debited from card\nending 7788 at ABANS PLC on 11/09/26.\nAvl Bal LKR 2,000,000.00",
-    "expect": { "outcome": "parsed", "amount": "1250000.00", "currency": "LKR", "type": "debit", "merchant": "Abans PLC", "last4": "7788", "balanceAfter": "2000000.00" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "1250000.00",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Abans PLC",
+      "last4": "7788",
+      "balanceAfter": "2000000.00"
+    }
   },
   {
     "id": "card_purchase_security_footer",
     "sender": "BANKA",
     "body": "LKR 3,200.00 debited from card ending 1234 at SPAR on 12/09/26. Never share your OTP with anyone.",
-    "expect": { "outcome": "parsed", "amount": "3200.00", "type": "debit", "merchant": "Spar", "last4": "1234" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "3200.00",
+      "type": "debit",
+      "merchant": "Spar",
+      "last4": "1234"
+    }
   },
   {
     "id": "card_purchase_rs_dot_space",
     "sender": null,
     "body": "Rs. 990 debited from card ending 1234 at KFC MAJESTIC CITY on 12/09/26.",
-    "expect": { "outcome": "parsed", "amount": "990", "currency": "LKR", "type": "debit", "merchant": "KFC Majestic City", "last4": "1234" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "990",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "KFC Majestic City",
+      "last4": "1234"
+    }
   },
   {
     "id": "account_credit_01",
     "sender": "BANKB",
     "body": "Your A/C xxxx5678 has been credited with LKR 150,000.00 on 10-09-2026. Bal: LKR 210,000.00",
-    "expect": { "outcome": "parsed", "amount": "150000.00", "currency": "LKR", "type": "credit", "last4": "5678", "balanceAfter": "210000.00" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "150000.00",
+      "currency": "LKR",
+      "type": "credit",
+      "last4": "5678",
+      "balanceAfter": "210000.00"
+    }
   },
   {
     "id": "account_credit_rs",
     "sender": "BANKB",
     "body": "Your A/C No. ****9988 has been credited with Rs 25000 on 11-09-2026",
-    "expect": { "outcome": "parsed", "amount": "25000", "currency": "LKR", "type": "credit", "last4": "9988" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "25000",
+      "currency": "LKR",
+      "type": "credit",
+      "last4": "9988"
+    }
   },
   {
     "id": "account_debit_01",
     "sender": "BANKB",
     "body": "Your A/C xxxx5678 has been debited with LKR 5,000.00 on 11-09-2026. Bal: LKR 205,000.00",
-    "expect": { "outcome": "parsed", "amount": "5000.00", "type": "debit", "last4": "5678", "balanceAfter": "205000.00" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "5000.00",
+      "type": "debit",
+      "last4": "5678",
+      "balanceAfter": "205000.00"
+    }
   },
   {
     "id": "pos_txn_01",
     "sender": "BANKC",
     "body": "Txn of LKR 850.00 at PICKME FOOD using card **9012 approved. Ref 88213",
-    "expect": { "outcome": "parsed", "amount": "850.00", "currency": "LKR", "type": "debit", "merchant": "Pickme Food", "last4": "9012" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "850.00",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Pickme Food",
+      "last4": "9012"
+    }
   },
   {
     "id": "pos_txn_usd",
     "sender": "BANKC",
     "body": "Txn of USD 45.99 at NETFLIX.COM using card **9012 approved. Ref 77120",
-    "expect": { "outcome": "parsed", "amount": "45.99", "currency": "USD", "type": "debit", "merchant": "Netflix.com", "last4": "9012" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "45.99",
+      "currency": "USD",
+      "type": "debit",
+      "merchant": "Netflix.com",
+      "last4": "9012"
+    }
   },
   {
     "id": "pos_txn_reversal",
     "sender": "BANKC",
     "body": "Txn of LKR 1,200.00 at UBER TRIP using card **9012 reversed. Ref 66001",
-    "expect": { "outcome": "parsed", "amount": "1200.00", "type": "refund", "merchant": "Uber Trip", "last4": "9012" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "1200.00",
+      "type": "refund",
+      "merchant": "Uber Trip",
+      "last4": "9012"
+    }
   },
   {
     "id": "generic_spent",
     "sender": "BANKD",
     "body": "You have spent LKR 3,450.75 at CARGILLS FOOD CITY on your card ending 2211. Thank you.",
-    "expect": { "outcome": "parsed", "amount": "3450.75", "currency": "LKR", "type": "debit", "merchant": "Cargills Food City", "last4": "2211" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "3450.75",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Cargills Food City",
+      "last4": "2211"
+    }
   },
   {
     "id": "generic_bill_payment",
     "sender": "BANKD",
     "body": "LKR 600.00 paid to DIALOG AXIATA via online banking from A/C ending 3344. Ref 99812",
-    "expect": { "outcome": "parsed", "amount": "600.00", "type": "debit", "merchant": "Dialog Axiata", "last4": "3344" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "600.00",
+      "type": "debit",
+      "merchant": "Dialog Axiata",
+      "last4": "3344"
+    }
   },
   {
     "id": "generic_atm_withdrawal",
     "sender": "BANKD",
     "body": "Cash withdrawal of LKR 20,000 from ATM at HNB KANDY. A/C x4567 Avl Bal LKR 80,500.00",
-    "expect": { "outcome": "parsed", "amount": "20000", "type": "debit", "merchant": "HNB Kandy", "last4": "4567", "balanceAfter": "80500.00" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "20000",
+      "type": "debit",
+      "merchant": "HNB Kandy",
+      "last4": "4567",
+      "balanceAfter": "80500.00"
+    }
   },
   {
     "id": "generic_credit_card_purchase_is_debit",
     "sender": "BANKD",
     "body": "LKR 4,800.00 spent on your credit card ending 3321 at ARPICO SUPERCENTRE.",
-    "expect": { "outcome": "parsed", "amount": "4800.00", "type": "debit", "merchant": "Arpico Supercentre", "last4": "3321" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "4800.00",
+      "type": "debit",
+      "merchant": "Arpico Supercentre",
+      "last4": "3321"
+    }
   },
   {
     "id": "generic_salary_credit_needs_review",
     "sender": "BANKD",
     "body": "Salary of LKR 185,000.00 received to your A/C ending 5678 on 25/08.",
-    "expect": { "outcome": "needsReview", "amount": "185000.00", "type": "credit", "last4": "5678" }
+    "expect": {
+      "outcome": "needsReview",
+      "amount": "185000.00",
+      "type": "credit",
+      "last4": "5678"
+    }
   },
   {
     "id": "generic_refund",
     "sender": "BANKD",
     "body": "Refund of LKR 2,999.00 at DARAZ LK credited to card ending 1234.",
-    "expect": { "outcome": "parsed", "amount": "2999.00", "type": "refund", "merchant": "Daraz LK", "last4": "1234" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "2999.00",
+      "type": "refund",
+      "merchant": "Daraz LK",
+      "last4": "1234"
+    }
   },
   {
     "id": "generic_cash_deposit_credit",
     "sender": "BANKD",
     "body": "Cash deposit of LKR 50,000.00 credited to A/C ending 5678 at CDM BAMBALAPITIYA.",
-    "expect": { "outcome": "parsed", "amount": "50000.00", "type": "credit", "merchant": "CDM Bambalapitiya", "last4": "5678" }
+    "expect": {
+      "outcome": "parsed",
+      "amount": "50000.00",
+      "type": "credit",
+      "merchant": "CDM Bambalapitiya",
+      "last4": "5678"
+    }
   },
   {
     "id": "otp_01",
     "sender": "BANKA",
     "body": "Your OTP for transaction of LKR 12,500.00 at DARAZ is 482913. Do not share this code with anyone.",
-    "expect": { "outcome": "ignored" }
+    "expect": {
+      "outcome": "ignored"
+    }
   },
   {
     "id": "otp_02",
     "sender": "BANKB",
     "body": "123456 is your one time password for online banking login. Valid for 5 minutes.",
-    "expect": { "outcome": "ignored" }
+    "expect": {
+      "outcome": "ignored"
+    }
   },
   {
     "id": "otp_03",
     "sender": "BANKC",
     "body": "Verification code: 908172. Use this to confirm your card registration.",
-    "expect": { "outcome": "ignored" }
+    "expect": {
+      "outcome": "ignored"
+    }
   },
   {
     "id": "promo_01",
     "sender": "BANKA",
     "body": "Enjoy 20% off at ODEL with your BankA credit card this weekend! T&C apply.",
-    "expect": { "outcome": "ignored" }
+    "expect": {
+      "outcome": "ignored"
+    }
   },
   {
     "id": "promo_02",
     "sender": "BANKB",
     "body": "Spend LKR 10,000 and WIN a trip to Maldives! Promo valid till 30/11.",
-    "expect": { "outcome": "ignored" }
+    "expect": {
+      "outcome": "ignored"
+    }
   },
   {
     "id": "due_statement_01",
     "sender": "BANKA",
     "body": "Your credit card statement is ready. Total due LKR 45,320.00. Minimum payment LKR 2,266.00. Due date 15/10/26.",
-    "expect": { "outcome": "ignored" }
+    "expect": {
+      "outcome": "ignored"
+    }
   },
   {
     "id": "due_reminder_02",
     "sender": "BANKC",
     "body": "Reminder: payment due of LKR 8,500.00 on your card ending 4455 is due on 20/10/26.",
-    "expect": { "outcome": "ignored" }
+    "expect": {
+      "outcome": "ignored"
+    }
   },
   {
     "id": "ambiguous_no_verb",
     "sender": "BANKD",
     "body": "LKR 1,500.00 at SPAR KIRULAPONE card ending 7788",
-    "expect": { "outcome": "needsReview", "amount": "1500.00", "type": "debit", "merchant": "Spar Kirulapone", "last4": "7788" }
+    "expect": {
+      "outcome": "needsReview",
+      "amount": "1500.00",
+      "type": "debit",
+      "merchant": "Spar Kirulapone",
+      "last4": "7788"
+    }
   },
   {
     "id": "needs_review_no_amount",
     "sender": "BANKA",
     "body": "Your card ending 1234 was debited. Please check the app for details.",
-    "expect": { "outcome": "needsReview" }
+    "expect": {
+      "outcome": "needsReview"
+    }
+  },
+  {
+    "id": "hnb_card_online",
+    "sender": "HNB",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "HNB SMS ALERT:INTERNET, Account:1120***4821,Location:UBER EATS, LK,Amount(Approx.):570.47 LKR,Av.Bal:1,234.56 LKR,Date:14.11.26,Time:18:26, Hot Line:0112462462",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "570.47",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Uber Eats",
+      "last4": "4821",
+      "balanceAfter": "1234.56",
+      "occurredAt": "2026-11-14 18:26"
+    }
+  },
+  {
+    "id": "hnb_card_pos_variant",
+    "sender": "HNB",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "HNB SMS ALERT:POS, Account:1120***4821,Location:KEELLS SUPER - NUGEGODA, LK,Amount(Approx.):2,150.00 LKR,Av.Bal:987.10 LKR,Date:13.11.26,Time:09:05, Hot Line:0112462462",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "2150.00",
+      "type": "debit",
+      "merchant": "Keells Super - Nugegoda",
+      "last4": "4821",
+      "balanceAfter": "987.10",
+      "occurredAt": "2026-11-13 09:05"
+    }
+  },
+  {
+    "id": "hnb_account_credit",
+    "sender": "HNB",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "LKR 100.00 credited to Ac No:11202XXXXX21 on 14/11/26 16:37:48 Reason:CEFT-RELOAD Bal:LKR 681.85 Protect from scams *DO NOT SHARE ACCOUNT DETAILS /OTP* Hotline 0112462462",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "100.00",
+      "currency": "LKR",
+      "type": "credit",
+      "merchant": "Ceft-reload",
+      "last4": "21",
+      "balanceAfter": "681.85",
+      "occurredAt": "2026-11-14 16:37"
+    }
+  },
+  {
+    "id": "hnb_account_debit_variant",
+    "sender": "HNB",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "LKR 2,500.00 debited from Ac No:11202XXXXX21 on 13/11/26 08:12:03 Reason:ATM WITHDRAWAL Bal:LKR 3,181.85 Protect from scams *DO NOT SHARE ACCOUNT DETAILS /OTP* Hotline 0112462462",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "2500.00",
+      "type": "debit",
+      "merchant": "ATM Withdrawal",
+      "last4": "21",
+      "balanceAfter": "3181.85",
+      "occurredAt": "2026-11-13 08:12"
+    }
+  },
+  {
+    "id": "dfcc_credit_card",
+    "sender": "DFCC",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "ALERT CR CARD: Livon Pharmacy CARD**3141 DEBITED LKR 4,452.56 ON (14/NOV/2026 17:46) AUTHCODE 902114 AVBAL LKR  52,136.34 IF UNAUTHORIZED CALL 0112350035",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "4452.56",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Livon Pharmacy",
+      "last4": "3141",
+      "balanceAfter": "52136.34",
+      "occurredAt": "2026-11-14 17:46"
+    }
+  },
+  {
+    "id": "dfcc_account_debit",
+    "sender": "DFCC",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "Your A/C No: ********5926 is debited with LKR100.00 on 14 NOV 2026 ref: Outward CEFT Transfer. Your bal is LKR753.38. If unauthorized call 0112350035",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "100.00",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Outward Ceft Transfer",
+      "last4": "5926",
+      "balanceAfter": "753.38"
+    }
+  },
+  {
+    "id": "ndb_credit_card",
+    "sender": "NDB",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "Card 481546******2290 Debited LKR 5,580.00 JAVA LOUNGE PVT LTD      PILIYAN 2026-11-13 19:51:18 Avl Bal 412,046.32.",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "5580.00",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Java Lounge PVT LTD Piliyan",
+      "last4": "2290",
+      "balanceAfter": "412046.32",
+      "occurredAt": "2026-11-13 19:51"
+    }
+  },
+  {
+    "id": "seylan_account_refund",
+    "sender": "SEYLAN",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "Your Account 1220****7310 was credited by LKR 15.00 ATM CHARGES REFUND on 09/11/2026 06:24:54 PM. Avl bal 2,323.42",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "15.00",
+      "currency": "LKR",
+      "type": "refund",
+      "merchant": "ATM Charges Refund",
+      "last4": "7310",
+      "balanceAfter": "2323.42",
+      "occurredAt": "2026-11-09 18:24"
+    }
+  },
+  {
+    "id": "seylan_credit_card",
+    "sender": "SEYLAN",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "Seylan Card ...5508 debit Txn 10540799999 of LKR 470.00 done on 09/11/2026 08:37:28 AM at CIBMART PILIYANDALA    PILIYANDALA  WPLK. Avl bal 21,273.72",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "470.00",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Cibmart Piliyandala",
+      "last4": "5508",
+      "balanceAfter": "21273.72",
+      "occurredAt": "2026-11-09 08:37"
+    }
+  },
+  {
+    "id": "peoples_account_debit",
+    "sender": "PeoplesBank",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "Dear Sir/Madam, Your A/C 335-2001****47 has been debited by Rs. 20025.00 (LPAY TFR @10:11 14/11/2026).[Av_Bal: Rs. 1045408.41 at the time of SMS generated]",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "20025.00",
+      "currency": "LKR",
+      "type": "debit",
+      "merchant": "Lpay TFR",
+      "last4": "47",
+      "balanceAfter": "1045408.41",
+      "occurredAt": "2026-11-14 10:11"
+    }
+  },
+  {
+    "id": "peoples_account_credit_variant",
+    "sender": "PeoplesBank",
+    "receivedAt": "2026-11-14T18:00:00Z",
+    "body": "Dear Sir/Madam, Your A/C 335-2001****47 has been credited by Rs. 5000.00 (CEFT IN @9:02 13/11/2026).[Av_Bal: Rs. 1050408.41 at the time of SMS generated]",
+    "expect": {
+      "outcome": "parsed",
+      "amount": "5000.00",
+      "type": "credit",
+      "merchant": "Ceft IN",
+      "last4": "47",
+      "balanceAfter": "1050408.41",
+      "occurredAt": "2026-11-13 09:02"
+    }
   }
 ]
