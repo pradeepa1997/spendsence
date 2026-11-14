@@ -4,8 +4,8 @@ An iOS expense tracker that logs bank SMS automatically. iOS doesn't let apps re
 **Shortcuts personal automation** ("Message contains `LKR`") passes each bank SMS to the app's
 **App Intent**. The intent parses the message and saves it on-device without opening the app.
 
-Specs: `PHASE1_SPEC.md` (SMS ingestion), `PHASE2_SPEC.md` (categories, editing, review queue, dashboard) and
-`PHASE2_5_SPEC.md` (accounts and balances).
+Specs: `PHASE1_SPEC.md` (SMS ingestion), `PHASE2_SPEC.md` (categories, editing, review queue, dashboard),
+`PHASE2_5_SPEC.md` (accounts and balances) and `PHASE3_SPEC.md` (budgets, notifications, widgets, onboarding).
 
 ## Features
 - **Dashboard:** spent / income / net for any month, a spending-by-category donut, daily bars, top merchants,
@@ -22,6 +22,13 @@ Specs: `PHASE1_SPEC.md` (SMS ingestion), `PHASE2_SPEC.md` (categories, editing, 
   their type (bank account, debit card, credit card, cash). Balances come from the latest SMS that states one;
   later transactions without a balance adjust it (shown as *estimated*). Credit cards show available credit and, with
   a limit, what you owe. Set balance, low-balance alerts, hide, and merge duplicate accounts.
+- **Budgets** (More → Budgets, Dashboard card): a monthly budget per category with progress bars; notifications
+  at 80% and 100% (once per category per month).
+- **Notifications:** one per logged SMS ("LKR 2,450.00 – Keells Super", "Groceries · HNB ••4821") with
+  *Change category* and *Not an expense* actions. Toggle them in More → Settings.
+- **Widgets:** Spending (small/medium), Lock Screen (rectangular/circular/inline) and Quick add.
+- **Onboarding:** a first-launch guide for the Shortcuts automation that waits for your test SMS. Re-run it from
+  More → Settings.
 - **Siri / Shortcuts:** "Log SMS in SpendSense" (the automation action), "Add expense in SpendSense",
   "How much did I spend in SpendSense".
 
@@ -42,6 +49,13 @@ open SpendSense.xcodeproj
    If you change them, update `project.yml` **and** `SpendCoreInfo.appGroupIdentifier`
    (`SpendCore/Sources/SpendCore/SpendCore.swift`).
 3. If Xcode asks, let it register the App Group in the developer portal.
+
+## Targets
+- `SpendSense` (app, App Intents) and `SpendSenseWidgets` (WidgetKit extension, embedded in the app). Both use the
+  App Group `group.com.pradeepa.spendsense` and link `SpendCore`.
+- When signing, pick your team for **both** targets. The widget bundle ID is `com.pradeepa.spendsense.widgets`.
+- Deep links: `spendsense://add`, `spendsense://transaction/<uuid>`, `spendsense://dashboard`, `spendsense://review`,
+  `spendsense://budgets`.
 
 ## Build & test
 ```bash
@@ -116,6 +130,9 @@ digits (HNB, People's Bank) are matched to the same account as a longer ending, 
 6. Send an OTP-style message (`Your OTP is 123456. Do not share it.`). It should appear in Messages
    as *Ignored* (More → Messages) and not in Transactions.
 7. Send the same message twice. The second should be marked *Duplicate*.
+9. **Phase 3:** set a budget below what you've spent and send a test SMS: you should get the logged notification and
+   a budget alert. Try *Not an expense* on a notification. Add the Spending and Lock Screen widgets and check they
+   update after an SMS. Reinstall (or More → Settings → Show the setup guide again) to walk through onboarding.
 8. **Phase 2:** edit a transaction's merchant or category and choose *Remember…*; send a similar SMS and check the
    rule is applied. Add a cash expense with **+** and with Siri ("Add expense in SpendSense"). Check the Dashboard
    totals and the Review tab badge.
