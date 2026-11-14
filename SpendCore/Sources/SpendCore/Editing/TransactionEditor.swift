@@ -57,6 +57,7 @@ public enum EditorError: Error, LocalizedError, Equatable {
     case systemCategoryCannotBeDeleted
     case invalidCreditLimit
     case cannotMergeIntoItself
+    case invalidBudget
 
     public var errorDescription: String? {
         switch self {
@@ -65,6 +66,7 @@ public enum EditorError: Error, LocalizedError, Equatable {
         case .systemCategoryCannotBeDeleted: "Built-in categories can be renamed but not deleted."
         case .invalidCreditLimit: "The credit limit must be greater than 0."
         case .cannotMergeIntoItself: "Choose a different account to merge into."
+        case .invalidBudget: "The budget must be greater than 0."
         }
     }
 }
@@ -255,6 +257,13 @@ public struct TransactionEditor {
         category.name = name
         category.symbol = symbol
         category.colorHex = colorHex
+        try save()
+    }
+
+    /// Sets or clears (nil) a category's monthly budget.
+    public func setBudget(_ category: TransactionCategory, to amount: Decimal?) throws {
+        if let amount, amount <= 0 { throw EditorError.invalidBudget }
+        category.monthlyBudget = amount
         try save()
     }
 

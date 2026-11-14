@@ -175,6 +175,26 @@ public actor TransactionStore {
         try makeContext().fetch(FetchDescriptor<Account>(sortBy: [SortDescriptor(\.displayName)])).map { AccountSnapshot($0) }
     }
 
+    public func dashboardSnapshot(now: Date) throws -> DashboardSnapshot {
+        try DashboardSnapshot.load(in: makeContext(), now: now)
+    }
+
+    public func transactionSnapshot(id: UUID) throws -> TransactionSnapshot? {
+        var descriptor = FetchDescriptor<Transaction>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try makeContext().fetch(descriptor).first.map { TransactionSnapshot($0) }
+    }
+
+    /// "Not an expense" from a notification: same as the Review queue's "Not a transaction". Returns false if gone.
+    public func markNotATransaction(id: UUID) throws -> Bool {
+        let context = makeContext()
+        var descriptor = FetchDescriptor<Transaction>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        guard let transaction = try context.fetch(descriptor).first else { return false }
+        try TransactionEditor(context: context).markNotATransaction(transaction)
+        return true
+    }
+
     public func ruleCount() throws -> Int {
         try makeContext().fetchCount(FetchDescriptor<MerchantRule>())
     }

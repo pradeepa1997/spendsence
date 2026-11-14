@@ -162,6 +162,24 @@ public actor IngestionService {
         }
     }
 
+    /// Month totals, budgets and review count for widgets, Siri and notifications. Nil if the store is unavailable.
+    public func dashboardSnapshot(now: Date = .now) async -> DashboardSnapshot? {
+        guard let store else { return nil }
+        return try? await store.dashboardSnapshot(now: now)
+    }
+
+    public func transaction(id: UUID) async -> TransactionSnapshot? {
+        guard let store else { return nil }
+        return try? await store.transactionSnapshot(id: id)
+    }
+
+    /// Removes a transaction the user marked "Not an expense" (e.g. from a notification). Never throws.
+    @discardableResult
+    public func markNotATransaction(id: UUID) async -> Bool {
+        guard let store else { return false }
+        return (try? await store.markNotATransaction(id: id)) ?? false
+    }
+
     /// Totals for the month containing `date`, or nil if the store is unavailable.
     public func monthlySummary(containing date: Date = .now) async -> SpendingSummary? {
         guard let store else { return nil }

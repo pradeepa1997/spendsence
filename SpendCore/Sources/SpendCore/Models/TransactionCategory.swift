@@ -18,6 +18,8 @@ public final class TransactionCategory {
     public var sortOrder: Int
     /// Excluded from "spent" totals (Transfers: ATM withdrawals, own-account transfers).
     public var excludedFromSpending: Bool
+    /// Optional monthly spending limit; alerts at 80% and 100%.
+    public var monthlyBudget: Decimal?
 
     @Relationship(deleteRule: .nullify, inverse: \Transaction.category)
     public var transactions: [Transaction] = []
