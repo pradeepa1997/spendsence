@@ -55,7 +55,8 @@ struct ParserUnitTests {
         let ordered = TemplateLibrary.bundled.ordered(for: "BankC").map(\.template.id)
         #expect(ordered.first == "generic_pos_txn")
         #expect(ordered.count == TemplateLibrary.bundled.templates.count)
-        #expect(TemplateLibrary.bundled.ordered(for: "HNB").prefix(2) == ["hnb_card_alert", "hnb_account"])
+        let hnbFirst: [String] = TemplateLibrary.bundled.ordered(for: "HNB").prefix(2).map(\.template.id)
+        #expect(hnbFirst == ["hnb_card_alert", "hnb_account"])
     }
 
     @Test(arguments: [
