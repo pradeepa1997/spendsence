@@ -104,11 +104,10 @@ extension Color {
             self = .gray
             return
         }
-        self.init(
-            red: Double((value >> 16) & 0xFF) / 255,
-            green: Double((value >> 8) & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255
-        )
+        let red: Double = Double((value >> 16) & 0xFF) / 255.0
+        let green: Double = Double((value >> 8) & 0xFF) / 255.0
+        let blue: Double = Double(value & 0xFF) / 255.0
+        self.init(red: red, green: green, blue: blue)
     }
 }
 

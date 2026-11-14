@@ -102,58 +102,72 @@ public struct SpendingSummary: Sendable, Equatable {
         calendar: Calendar = .current,
         topMerchantLimit: Int = 5
     ) -> SpendingSummary {
-        let inInterval = facts.filter { $0.occurredAt >= interval.start && $0.occurredAt < interval.end }
-        let primary = inInterval.filter { $0.currency == currency }
+        let inInterval: [TransactionFact] = facts.filter { fact in
+            fact.occurredAt >= interval.start && fact.occurredAt < interval.end
+        }
+        let primary: [TransactionFact] = inInterval.filter { fact in fact.currency == currency }
 
         var spent: Decimal = 0
         var income: Decimal = 0
-        var categories: [String: (name: String, symbol: String, colorHex: String, amount: Decimal, count: Int)] = [:]
-        var days: [Date: Decimal] = [:]
-        var merchants: [String: (amount: Decimal, count: Int)] = [:]
+        var categoryTotals: [String: CategoryAccumulator] = [:]
+        var categoryOrder: [String] = []
+        var dayTotals: [Date: Decimal] = [:]
+        var merchantTotals: [String: MerchantAccumulator] = [:]
+        var merchantOrder: [String] = []
 
         for fact in primary {
-            if fact.type == .credit, !fact.excludedFromSpending {
+            if fact.type == .credit && !fact.excludedFromSpending {
                 income += fact.amount
             }
-            let value = spendingValue(of: fact)
-            guard value != 0 else { continue }
+            let value: Decimal = spendingValue(of: fact)
+            if value == 0 { continue }
             spent += value
 
-            let categoryKey = fact.categoryID?.uuidString ?? "uncategorized"
-            var category = categories[categoryKey]
-                ?? (fact.categoryName, fact.categorySymbol, fact.categoryColorHex, 0, 0)
-            category.amount += value
-            category.count += 1
-            categories[categoryKey] = category
+            let categoryKey: String = fact.categoryID?.uuidString ?? "uncategorized"
+            if categoryTotals[categoryKey] == nil {
+                categoryTotals[categoryKey] = CategoryAccumulator(
+                    name: fact.categoryName, symbol: fact.categorySymbol, colorHex: fact.categoryColorHex
+                )
+                categoryOrder.append(categoryKey)
+            }
+            categoryTotals[categoryKey]?.add(value)
 
-            days[calendar.startOfDay(for: fact.occurredAt), default: 0] += value
+            let day: Date = calendar.startOfDay(for: fact.occurredAt)
+            dayTotals[day] = (dayTotals[day] ?? 0) + value
 
-            let merchant = fact.merchant ?? "Unknown"
-            var merchantTotal = merchants[merchant] ?? (0, 0)
-            merchantTotal.amount += value
-            merchantTotal.count += 1
-            merchants[merchant] = merchantTotal
+            let merchantName: String = fact.merchant ?? "Unknown"
+            if merchantTotals[merchantName] == nil {
+                merchantTotals[merchantName] = MerchantAccumulator()
+                merchantOrder.append(merchantName)
+            }
+            merchantTotals[merchantName]?.add(value)
         }
 
-        let byCategory = categories
-            .map { CategoryTotal(id: $0.key, name: $0.value.name, symbol: $0.value.symbol,
-                                 colorHex: $0.value.colorHex, amount: $0.value.amount, count: $0.value.count) }
-            .filter { $0.amount > 0 }
-            .sorted { $0.amount != $1.amount ? $0.amount > $1.amount : $0.name < $1.name }
+        var byCategory: [CategoryTotal] = []
+        for key in categoryOrder {
+            guard let total = categoryTotals[key], total.amount > 0 else { continue }
+            byCategory.append(CategoryTotal(
+                id: key, name: total.name, symbol: total.symbol, colorHex: total.colorHex,
+                amount: total.amount, count: total.count
+            ))
+        }
+        byCategory.sort(by: Self.isLargerCategory)
 
         var byDay: [DayTotal] = []
-        var day = calendar.startOfDay(for: interval.start)
+        var day: Date = calendar.startOfDay(for: interval.start)
         while day < interval.end {
-            byDay.append(DayTotal(day: day, amount: days[day] ?? 0))
+            byDay.append(DayTotal(day: day, amount: dayTotals[day] ?? 0))
             guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
             day = next
         }
 
-        let topMerchants = merchants
-            .map { MerchantTotal(name: $0.key, amount: $0.value.amount, count: $0.value.count) }
-            .filter { $0.amount > 0 }
-            .sorted { $0.amount != $1.amount ? $0.amount > $1.amount : $0.name < $1.name }
-            .prefix(topMerchantLimit)
+        var merchants: [MerchantTotal] = []
+        for name in merchantOrder {
+            guard let total = merchantTotals[name], total.amount > 0 else { continue }
+            merchants.append(MerchantTotal(name: name, amount: total.amount, count: total.count))
+        }
+        merchants.sort(by: Self.isLargerMerchant)
+        let topMerchants: [MerchantTotal] = Array(merchants.prefix(topMerchantLimit))
 
         return SpendingSummary(
             interval: interval,
@@ -162,9 +176,45 @@ public struct SpendingSummary: Sendable, Equatable {
             totalIncome: income,
             byCategory: byCategory,
             byDay: byDay,
-            topMerchants: Array(topMerchants),
+            topMerchants: topMerchants,
             transactionCount: primary.count,
             otherCurrencyCount: inInterval.count - primary.count
         )
+    }
+
+    // MARK: Helpers (kept as named functions so the type checker stays fast)
+
+    private struct CategoryAccumulator {
+        let name: String
+        let symbol: String
+        let colorHex: String
+        var amount: Decimal = 0
+        var count: Int = 0
+
+        mutating func add(_ value: Decimal) {
+            amount += value
+            count += 1
+        }
+    }
+
+    private struct MerchantAccumulator {
+        var amount: Decimal = 0
+        var count: Int = 0
+
+        mutating func add(_ value: Decimal) {
+            amount += value
+            count += 1
+        }
+    }
+
+    /// Larger amount first; ties by name.
+    private static func isLargerCategory(_ lhs: CategoryTotal, _ rhs: CategoryTotal) -> Bool {
+        if lhs.amount != rhs.amount { return lhs.amount > rhs.amount }
+        return lhs.name < rhs.name
+    }
+
+    private static func isLargerMerchant(_ lhs: MerchantTotal, _ rhs: MerchantTotal) -> Bool {
+        if lhs.amount != rhs.amount { return lhs.amount > rhs.amount }
+        return lhs.name < rhs.name
     }
 }

@@ -105,7 +105,7 @@ struct SpendingSummaryTests {
         let dining = UUID()
         let groceries = UUID()
         let transfers = UUID()
-        let facts = [
+        let facts: [TransactionFact] = [
             TransactionFact(amount: 1_000, type: .debit, occurredAt: date("2026-11-02T10:00:00Z"), merchant: "Uber Eats",
                             categoryID: dining, categoryName: "Dining"),
             TransactionFact(amount: 500, type: .debit, occurredAt: date("2026-11-02T12:00:00Z"), merchant: "Uber Eats",
@@ -127,7 +127,8 @@ struct SpendingSummaryTests {
         #expect(summary.totalIncome == 150_000)
         #expect(summary.net == 145_700)
         #expect(summary.byCategory.map(\.name) == ["Groceries", "Dining"])
-        #expect(summary.byCategory.map(\.amount) == [2_800, 1_500])
+        let categoryAmounts: [Decimal] = summary.byCategory.map(\.amount)
+        #expect(categoryAmounts == [Decimal(2_800), Decimal(1_500)])
         #expect(summary.byDay.count == 30)
         #expect(summary.byDay[1].amount == 1_500) // 2 Nov
         #expect(summary.byDay[5].amount == -200)  // 6 Nov: refund only
@@ -183,11 +184,11 @@ struct EditorTests {
             body: "LKR 100.00 credited to Ac No:11202XXXXX21 on 14/11/26 16:37:48 Reason:CEFT-RELOAD Bal:LKR 681.85",
             sender: "HNB", receivedAt: t0
         )
-        let byMerchant = Dictionary(uniqueKeysWithValues: try await store.transactionSnapshots().map {
-            ($0.merchant ?? "", $0.categorySystemKey)
-        })
-        #expect(byMerchant["Livon Pharmacy"] == DefaultCategories.health)
-        #expect(byMerchant["Ceft-reload"] == DefaultCategories.income)
+        let snapshots: [TransactionSnapshot] = try await store.transactionSnapshots()
+        let pharmacy = snapshots.first { $0.merchant == "Livon Pharmacy" }
+        let reload = snapshots.first { $0.merchant == "Ceft-reload" }
+        #expect(pharmacy?.categorySystemKey == DefaultCategories.health)
+        #expect(reload?.categorySystemKey == DefaultCategories.income)
     }
 
     @Test func rememberedRuleRenamesAndRecategorisesFutureAndPast() async throws {
