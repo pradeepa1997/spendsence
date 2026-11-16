@@ -155,7 +155,7 @@ private struct AutomationStep: View {
         VStack(alignment: .leading, spacing: 14) {
             instruction(1, "Open **Shortcuts** → **Automation** → **+** (New Automation).")
             instruction(2, "Choose **Message**. Tap **Message Contains**, type **LKR**. Leave Sender empty.")
-            instruction(3, "Select **Run Immediately** and turn **Notify When Run** off. Tap **Next**.")
+            instruction(3, "Select **Run Immediately** (not *Run After Confirmation*) and turn **Notify When Run** off. Tap **Next**.")
             instruction(4, "Tap **New Blank Automation** → **Add Action** → search **Log Transaction from SMS**.")
             instruction(5, "Tap **Message** → **Shortcut Input**, then tap it again → **Content**. Set **Sender** to **Shortcut Input → Sender**. Tap **Done**.")
             if useRs {

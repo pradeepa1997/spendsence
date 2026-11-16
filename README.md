@@ -119,7 +119,7 @@ digits (HNB, People's Bank) are matched to the same account as a longer ending, 
    appears in Transactions, with a category.
 3. **Shortcuts:**
    - Automation → **+** → **Message** → *Message Contains* `LKR`.
-   - Turn on **Run Immediately** and turn off *Notify When Run*.
+   - Choose **Run Immediately** (not *Run After Confirmation*) and turn off *Notify When Run*.
    - Add the action **Log Transaction from SMS**. Set *Message* to *Shortcut Input → Content* and
      *Sender* to *Shortcut Input → Sender*.
    - Repeat with the keyword `Rs` if your banks use it.
@@ -139,6 +139,18 @@ digits (HNB, People's Bank) are matched to the same account as a longer ending, 
 
 You can also run the intent by hand: Shortcuts → new shortcut → *Log Transaction from SMS* → type a
 message → ▶︎.
+
+## Troubleshooting the automation
+- **A confirmation appears / nothing is logged until you tap it:** open Shortcuts → Automation → your
+  "Message contains LKR" automation and select **Run Immediately**. *Run After Confirmation* waits for a tap, and on
+  the Lock Screen that tap often never happens.
+- **A "Running your automation" banner appears:** turn off **Notify When Run** in the same screen. SpendSense
+  sends its own notification for each transaction (More → Settings to turn it off).
+- **Nothing logged while locked:** the action is allowed to run on the Lock Screen and writes to storage that's
+  available after the first unlock since restart. Messages received before the first unlock after a restart
+  can't be logged by any app. Check More → Messages: every SMS the action receives is listed there, including
+  ones that failed.
+- **Two keywords:** if your banks use both LKR and Rs, you need two automations (one per keyword).
 
 ## Releasing to TestFlight
 Ready in the repo: app icon (`App/Assets.xcassets`), privacy manifest (`App/PrivacyInfo.xcprivacy`, no data collected),

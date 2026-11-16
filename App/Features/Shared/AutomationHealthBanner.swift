@@ -14,7 +14,7 @@ struct AutomationHealthBanner: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
-                    Text("Open Shortcuts → Automation and check the “Message contains LKR” automation is on and set to Run Immediately.")
+                    Text("Open Shortcuts → Automation and check the “Message contains LKR” automation is on and set to Run Immediately (not Run After Confirmation).")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
